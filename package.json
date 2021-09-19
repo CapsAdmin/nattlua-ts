@@ -1,0 +1,21 @@
+{
+    "name": "nattlua2",
+    "version": "1.0.0",
+    "main": "src/index.ts",
+    "license": "MIT",
+    "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^4.31.1",
+        "@typescript-eslint/parser": "^4.31.1",
+        "eslint": "^7.32.0",
+        "eslint-config-prettier": "^8.3.0",
+        "eslint-plugin-prettier": "^4.0.0",
+        "prettier": "^2.4.1",
+        "ts-node": "^10.2.1",
+        "tslint": "^6.1.3",
+        "typescript": "^4.4.3"
+    },
+    "scripts": {
+        "main": "ts-node src/index.ts"
+    },
+    "dependencies": {}
+}
