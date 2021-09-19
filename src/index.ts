@@ -100,7 +100,7 @@ abstract class BaseSyntax {
 	}
 	ReadNumberAnnotation(lexer: { Position: number; GetChars: (start: number, stop: number) => string }) {
 		for (let annotation of this.NumberAnnotations) {
-			if (lexer.GetChars(lexer.Position, lexer.Position + annotation.length) == annotation) {
+			if (lexer.GetChars(lexer.Position, lexer.Position + annotation.length - 1) == annotation) {
 				lexer.Position += annotation.length
 				return true
 			}
@@ -109,7 +109,7 @@ abstract class BaseSyntax {
 	}
 	ReadSymbol(lexer: { Position: number; GetChars: (start: number, stop: number) => string }) {
 		for (let annotation of this.GetSymbols()) {
-			if (lexer.GetChars(lexer.Position, lexer.Position + annotation.length) == annotation) {
+			if (lexer.GetChars(lexer.Position, lexer.Position + annotation.length - 1) == annotation) {
 				lexer.Position += annotation.length
 				return true
 			}
@@ -141,12 +141,10 @@ abstract class BaseSyntax {
 	}
 
 	Build() {
-		const symbols = []
-
 		const add_symbols = (tbl: typeof this.SymbolCharacters) => {
 			for (let symbol of tbl) {
 				if (/[^\p{L}\d\s@#]/u.test(symbol)) {
-					symbols.push(symbol)
+					this.symbols.push(symbol)
 				}
 			}
 		}
@@ -159,7 +157,7 @@ abstract class BaseSyntax {
 						if (token.substr(0, 1) == "R") {
 							token = token.substr(1, 1)
 						}
-						symbols.push(token)
+						this.symbols.push(token)
 					}
 				}
 			}
@@ -170,7 +168,7 @@ abstract class BaseSyntax {
 			add_symbols(this.PrimaryBinaryOperators)
 
 			for (let str of this.SymbolCharacters) {
-				symbols.push(str)
+				this.symbols.push(str)
 			}
 		}
 
@@ -399,7 +397,7 @@ class Lexer {
 	}
 
 	IsByte(what: number, offset: number) {
-		return this.GetCurrentByteChar() == what
+		return this.GetChar(offset) == what
 	}
 
 	IsValue(what: string, offset: number) {
@@ -437,7 +435,7 @@ class Lexer {
 	}
 
 	ReadEndOfFile() {
-		if (this.Position >= this.GetLength()) {
+		if (this.TheEnd()) {
 			this.Advance(1)
 			return true
 		}
@@ -461,17 +459,6 @@ class Lexer {
 		let start = this.Position
 		let [type, is_whitespace] = this.Read()
 
-		if (!type) {
-			if (this.ReadEndOfFile()) {
-				type = "end_of_file"
-				is_whitespace = false
-			}
-		}
-
-		if (!type) {
-			;[type, is_whitespace] = this.ReadUnknown()
-		}
-
 		is_whitespace = is_whitespace || false
 
 		return [type, is_whitespace, start, this.Position - 1]
@@ -485,7 +472,7 @@ class Lexer {
 	GetTokens() {
 		this.ResetState()
 		let tokens: Token[] = []
-		while (!this.TheEnd()) {
+		while (true) {
 			let token = this.ReadToken()
 			tokens.push(token)
 			if (token.type == "end_of_file") break
@@ -954,9 +941,17 @@ class LuaLexer extends Lexer {
 			if (name) return [name, false]
 		}
 
+		console.log(this.Position, this.TheEnd(), this.GetLength())
+
+		if (this.ReadEndOfFile()) {
+			return ["end_of_file", false]
+		}
+
 		return this.ReadUnknown()
 	}
 }
 
-let lexer = new LuaLexer("local foo = 1")
-console.log(lexer.GetTokens())
+let lexer = new LuaLexer("local foo = 100ull")
+for (let token of lexer.GetTokens()) {
+	console.log(token)
+}
