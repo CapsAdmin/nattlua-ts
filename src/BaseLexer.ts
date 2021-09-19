@@ -86,6 +86,16 @@ export class BaseLexer {
 		return new Token(type, is_whitespace, start, stop)
 	}
 
+	ReadFromArray(array: string[]) {
+		for (let annotation of array) {
+			if (this.GetString(this.GetPosition(), this.GetPosition() + annotation.length - 1) == annotation) {
+				this.Advance(annotation.length)
+				return true
+			}
+		}
+		return false
+	}
+
 	ReadShebang() {
 		if (this.Position == 0 && this.IsCurrentValue("#")) {
 			while (this.Position < this.GetLength()) {

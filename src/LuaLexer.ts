@@ -163,7 +163,7 @@ export class LuaLexer extends BaseLexer {
 		} else if (what == "decimal") {
 			if (this.IsCurrentValue("e") || this.IsCurrentValue("E")) return this.ReadNumberPowExponent("exponent")
 		}
-		return syntax.ReadNumberAnnotation(this)
+		return this.ReadFromArray(syntax.NumberAnnotations)
 	}
 	private ReadHexNumber() {
 		this.Advance(2)
@@ -358,7 +358,7 @@ export class LuaLexer extends BaseLexer {
 	}
 
 	ReadSymbol(): TokenType | false {
-		if (syntax.ReadSymbol(this)) return "symbol"
+		if (this.ReadFromArray(syntax.GetSymbols())) return "symbol"
 		return false
 	}
 

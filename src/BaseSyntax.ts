@@ -107,25 +107,8 @@ export abstract class BaseSyntax {
 	GetBinaryOperatorInfo(tk: Token) {
 		return this.binary_operator_info[tk.value]
 	}
-	ReadNumberAnnotation(lexer: BaseLexer) {
-		for (let annotation of this.NumberAnnotations) {
-			if (lexer.GetString(lexer.GetPosition(), lexer.GetPosition() + annotation.length - 1) == annotation) {
-				lexer.Advance(annotation.length)
-				return true
-			}
-		}
-		return false
-	}
-	ReadSymbol(lexer: BaseLexer) {
-		for (let annotation of this.GetSymbols()) {
-			if (lexer.GetString(lexer.GetPosition(), lexer.GetPosition() + annotation.length - 1) == annotation) {
-				lexer.Advance(annotation.length)
-				return true
-			}
-		}
-		return false
-	}
-	IsValue(token: Token) {
+
+	IsTokenValue(token: Token) {
 		if (token.type == "number" || token.type == "string") return true
 		if (this.IsKeywordValue(token)) return true
 		if (this.IsKeyword(token)) return false
