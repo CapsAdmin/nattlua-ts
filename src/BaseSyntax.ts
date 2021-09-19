@@ -50,6 +50,12 @@ export abstract class BaseSyntax {
 		)
 	}
 
+	private hex_map = new Set<number>()
+
+	IsValidHex(byte: number) {
+		return this.hex_map.has(byte)
+	}
+
 	symbols: string[] = []
 	lookup: { [key: string]: string[] } = {}
 	binary_operator_info: { [key: string]: { left_priority: number; right_priority: number } } = {}
@@ -240,6 +246,33 @@ export abstract class BaseSyntax {
 			for (let key of this.NonStandardKeywords) {
 				this.NonStandardKeywordLookup.add(key)
 			}
+		}
+
+		for (let char of [
+			"0",
+			"1",
+			"2",
+			"3",
+			"4",
+			"5",
+			"6",
+			"7",
+			"8",
+			"9",
+			"a",
+			"b",
+			"c",
+			"d",
+			"e",
+			"f",
+			"A",
+			"B",
+			"C",
+			"D",
+			"E",
+			"F",
+		]) {
+			this.hex_map.add(char.charCodeAt(0))
 		}
 	}
 }

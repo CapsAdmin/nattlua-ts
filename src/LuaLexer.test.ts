@@ -170,7 +170,7 @@ test("glua", () => {
 	gen_all_passes(passes, "0X", hexs, "p", decs)
 	gen_all_passes(passes, "0X", hexs, "P", decs)
 
-	test("valid literals", () => {
+	test("valid number literals", () => {
 		let lines = []
 		for (let [i, p] of passes.entries()) {
 			lines.push("local x" + (i + 1) + " = " + p)

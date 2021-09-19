@@ -136,161 +136,130 @@ export class LuaLexer extends BaseLexer {
 		return false
 	}
 
-	ReadNumber(): TokenType | false {
-		const ReadNumberPowExponent = (what: "pow" | "exponent") => {
+	private ReadNumberPowExponent(what: "pow" | "exponent") {
+		this.Advance(1)
+
+		if (this.IsCurrentValue("+") || this.IsCurrentValue("-")) {
 			this.Advance(1)
 
-			if (this.IsCurrentValue("+") || this.IsCurrentValue("-")) {
+			if (!syntax.IsNumber(this.GetCurrentByteChar())) {
+				this.Error(
+					"malformed " + what + " expected number, got " + this.GetCurrentByteChar().toString(),
+					this.GetPosition() - 2,
+				)
+			}
+		}
+
+		while (!this.TheEnd()) {
+			if (!syntax.IsNumber(this.GetCurrentByteChar())) break
+			this.Advance(1)
+		}
+
+		return true
+	}
+	private ReadNumberAnnotations(what: "hex" | "decimal" | "binary") {
+		if (what == "hex") {
+			if (this.IsCurrentValue("p") || this.IsCurrentValue("P")) return this.ReadNumberPowExponent("pow")
+		} else if (what == "decimal") {
+			if (this.IsCurrentValue("e") || this.IsCurrentValue("E")) return this.ReadNumberPowExponent("exponent")
+		}
+		return syntax.ReadNumberAnnotation(this)
+	}
+	private ReadHexNumber() {
+		this.Advance(2)
+		let dot = false
+
+		while (!this.TheEnd()) {
+			if (this.IsCurrentValue("_")) {
 				this.Advance(1)
-
-				if (!syntax.IsNumber(this.GetCurrentByteChar())) {
-					this.Error(
-						"malformed " + what + " expected number, got " + this.GetCurrentByteChar().toString(),
-						this.GetPosition() - 2,
-					)
-				}
 			}
 
-			while (!this.TheEnd()) {
-				if (!syntax.IsNumber(this.GetCurrentByteChar())) break
+			if (this.IsCurrentValue(".")) {
+				if (dot) {
+					// this.Error("dot can only be placed once")
+					return
+				}
+				dot = true
 				this.Advance(1)
 			}
 
-			return true
-		}
+			if (this.ReadNumberAnnotations("hex")) break
 
-		const ReadNumberAnnotations = (what: "hex" | "decimal" | "binary") => {
-			if (what == "hex") {
-				if (this.IsCurrentValue("p") || this.IsCurrentValue("P")) return ReadNumberPowExponent("pow")
-			} else if (what == "decimal") {
-				if (this.IsCurrentValue("e") || this.IsCurrentValue("E")) return ReadNumberPowExponent("exponent")
-			}
-			return syntax.ReadNumberAnnotation(this)
-		}
-
-		let hex_map = new Set<number>()
-		for (let char of [
-			"0",
-			"1",
-			"2",
-			"3",
-			"4",
-			"5",
-			"6",
-			"7",
-			"8",
-			"9",
-			"a",
-			"b",
-			"c",
-			"d",
-			"e",
-			"f",
-			"A",
-			"B",
-			"C",
-			"D",
-			"E",
-			"F",
-		]) {
-			hex_map.add(char.charCodeAt(0))
-		}
-
-		const ReadHexNumber = () => {
-			this.Advance(2)
-			let dot = false
-
-			while (!this.TheEnd()) {
-				if (this.IsCurrentValue("_")) {
-					this.Advance(1)
-				}
-
-				if (this.IsCurrentValue(".")) {
-					if (dot) {
-						// this.Error("dot can only be placed once")
-						return
-					}
-					dot = true
-					this.Advance(1)
-				}
-
-				if (ReadNumberAnnotations("hex")) break
-
-				if (hex_map.has(this.GetCurrentByteChar())) {
-					this.Advance(1)
-				} else if (syntax.IsSpace(this.GetCurrentByteChar()) || syntax.IsSymbol(this.GetCurrentByteChar())) {
-					break
-				} else if (this.GetCurrentByteChar() != 0) {
-					this.Error("malformed number " + this.GetCurrentByteChar().toString() + " in hex notation")
-				}
+			if (syntax.IsValidHex(this.GetCurrentByteChar())) {
+				this.Advance(1)
+			} else if (syntax.IsSpace(this.GetCurrentByteChar()) || syntax.IsSymbol(this.GetCurrentByteChar())) {
+				break
+			} else if (this.GetCurrentByteChar() != 0) {
+				this.Error("malformed number " + this.GetCurrentByteChar().toString() + " in hex notation")
 			}
 		}
+	}
 
-		const ReadBinaryNumber = () => {
-			this.Advance(2)
+	private ReadBinaryNumber() {
+		this.Advance(2)
 
-			while (!this.TheEnd()) {
-				if (this.IsCurrentValue("_")) {
-					this.Advance(1)
-				}
+		while (!this.TheEnd()) {
+			if (this.IsCurrentValue("_")) {
+				this.Advance(1)
+			}
 
-				if (this.IsCurrentValue("1") || this.IsCurrentValue("0")) {
-					this.Advance(1)
-				} else if (syntax.IsSpace(this.GetCurrentByteChar())) {
-					break
-				} else {
-					this.Error("malformed number " + this.GetCurrentByteChar().toString() + " in binary notation")
+			if (this.IsCurrentValue("1") || this.IsCurrentValue("0")) {
+				this.Advance(1)
+			} else if (syntax.IsSpace(this.GetCurrentByteChar())) {
+				break
+			} else {
+				this.Error("malformed number " + this.GetCurrentByteChar().toString() + " in binary notation")
+				return
+			}
+
+			if (this.ReadNumberAnnotations("binary")) {
+				break
+			}
+		}
+	}
+	private ReadDecimalNumber() {
+		let dot = false
+
+		while (!this.TheEnd()) {
+			if (this.IsCurrentValue("_")) {
+				this.Advance(1)
+			}
+
+			if (this.IsCurrentValue(".")) {
+				if (this.IsValue(".", 1)) {
 					return
 				}
 
-				if (ReadNumberAnnotations("binary")) {
-					break
+				if (dot) {
+					return
 				}
+
+				dot = true
+
+				this.Advance(1)
+			}
+			if (this.ReadNumberAnnotations("decimal")) {
+				break
+			}
+			if (syntax.IsNumber(this.GetCurrentByteChar())) {
+				this.Advance(1)
+			} else {
+				break
 			}
 		}
+	}
 
-		const ReadDecimalNumber = () => {
-			let dot = false
-
-			while (!this.TheEnd()) {
-				if (this.IsCurrentValue("_")) {
-					this.Advance(1)
-				}
-
-				if (this.IsCurrentValue(".")) {
-					if (this.IsValue(".", 1)) {
-						return
-					}
-
-					if (dot) {
-						return
-					}
-
-					dot = true
-
-					this.Advance(1)
-				}
-				if (ReadNumberAnnotations("decimal")) {
-					break
-				}
-				if (syntax.IsNumber(this.GetCurrentByteChar())) {
-					this.Advance(1)
-				} else {
-					break
-				}
-			}
-		}
-
+	ReadNumber(): TokenType | false {
 		if (
 			syntax.IsNumber(this.GetCurrentByteChar()) ||
 			(this.IsCurrentValue(".") && syntax.IsNumber(this.GetByteCharOffset(1)!))
 		) {
 			if (this.IsValue("x", 1) || this.IsValue("X", 1)) {
-				ReadHexNumber()
+				this.ReadHexNumber()
 			} else if (this.IsValue("b", 1) || this.IsValue("B", 1)) {
-				ReadBinaryNumber()
+				this.ReadBinaryNumber()
 			} else {
-				ReadDecimalNumber()
+				this.ReadDecimalNumber()
 			}
 
 			return "number"

@@ -3,7 +3,9 @@ import { Token, TokenType, WhitespaceToken } from "./Token"
 export class BaseLexer {
 	private Buffer: string
 	private Position: number = 0
-	private name: string
+	private Name: string
+
+	// useful when step debugging
 	private CurrentDebugChar: string = ""
 
 	GetLength(): number {
@@ -77,7 +79,7 @@ export class BaseLexer {
 	OnError(code: string, name: string, msg: string, start: number, stop: number) {}
 
 	Error(msg: string, start?: number, stop?: number) {
-		this.OnError(this.Buffer, this.name, msg, start || this.Position, stop || this.Position)
+		this.OnError(this.Buffer, this.Name, msg, start || this.Position, stop || this.Position)
 	}
 
 	NewToken(type: TokenType, is_whitespace: boolean, start: number, stop: number) {
@@ -182,7 +184,7 @@ export class BaseLexer {
 		}
 
 		this.Buffer = remove_bom_header(code)
-		this.name = "unknown"
+		this.Name = "unknown"
 		this.SetPosition(0)
 		this.ResetState()
 	}
