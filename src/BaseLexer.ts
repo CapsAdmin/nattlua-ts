@@ -1,20 +1,25 @@
 import { Token, TokenType, WhitespaceToken } from "./Token"
 
 export class BaseLexer {
-	Buffer: string
-	Position: number
-	name: string
+	private Buffer: string
+	private Position: number = 0
+	private name: string
+	private CurrentDebugChar: string = ""
 
 	GetLength(): number {
 		return this.Buffer.length
 	}
 
-	GetChars(start: number, stop: number): string {
+	GetString(start: number, stop: number): string {
 		return this.Buffer.substr(start, stop - start + 1)
 	}
 
-	GetChar(offset: number): number {
-		return this.Buffer.charCodeAt(this.Position + offset)
+	GetByteCharOffset(offset: number): number | undefined {
+		let byte = this.Buffer.charCodeAt(this.Position + offset)
+		if (isFinite(byte)) {
+			return byte
+		}
+		return undefined
 	}
 
 	GetCurrentByteChar(): number {
@@ -22,7 +27,7 @@ export class BaseLexer {
 	}
 
 	ResetState() {
-		this.Position = 0
+		this.SetPosition(0)
 	}
 
 	FindNearest(str: string) {
@@ -33,16 +38,21 @@ export class BaseLexer {
 
 	ReadChar() {
 		let char = this.GetCurrentByteChar()
-		this.Position++
+		this.Advance(1)
 		return char
 	}
 
 	Advance(len: number) {
-		this.Position += len
+		this.SetPosition(this.Position + len)
 	}
 
 	SetPosition(pos: number) {
 		this.Position = pos
+		this.CurrentDebugChar = this.GetString(this.Position, this.Position)
+	}
+
+	GetPosition() {
+		return this.Position
 	}
 
 	TheEnd() {
@@ -50,7 +60,7 @@ export class BaseLexer {
 	}
 
 	IsByte(what: number, offset: number) {
-		return this.GetChar(offset) == what
+		return this.GetByteCharOffset(offset) == what
 	}
 
 	IsValue(what: string, offset: number) {
@@ -132,7 +142,7 @@ export class BaseLexer {
 		}
 
 		for (let token of tokens) {
-			token.value = this.GetChars(token.start, token.stop)
+			token.value = this.GetString(token.start, token.stop)
 		}
 
 		let whitespace_buffer = []
@@ -173,7 +183,7 @@ export class BaseLexer {
 
 		this.Buffer = remove_bom_header(code)
 		this.name = "unknown"
-		this.Position = 0
+		this.SetPosition(0)
 		this.ResetState()
 	}
 }

@@ -1,3 +1,5 @@
+import { BaseLexer } from "./BaseLexer"
+import { LuaLexer } from "./LuaLexer"
 import { Token } from "./Token"
 
 const B = (str: string) => str.charCodeAt(0)
@@ -99,19 +101,19 @@ export abstract class BaseSyntax {
 	GetBinaryOperatorInfo(tk: Token) {
 		return this.binary_operator_info[tk.value]
 	}
-	ReadNumberAnnotation(lexer: { Position: number; GetChars: (start: number, stop: number) => string }) {
+	ReadNumberAnnotation(lexer: BaseLexer) {
 		for (let annotation of this.NumberAnnotations) {
-			if (lexer.GetChars(lexer.Position, lexer.Position + annotation.length - 1) == annotation) {
-				lexer.Position += annotation.length
+			if (lexer.GetString(lexer.GetPosition(), lexer.GetPosition() + annotation.length - 1) == annotation) {
+				lexer.Advance(annotation.length)
 				return true
 			}
 		}
 		return false
 	}
-	ReadSymbol(lexer: { Position: number; GetChars: (start: number, stop: number) => string }) {
+	ReadSymbol(lexer: BaseLexer) {
 		for (let annotation of this.GetSymbols()) {
-			if (lexer.GetChars(lexer.Position, lexer.Position + annotation.length - 1) == annotation) {
-				lexer.Position += annotation.length
+			if (lexer.GetString(lexer.GetPosition(), lexer.GetPosition() + annotation.length - 1) == annotation) {
+				lexer.Advance(annotation.length)
 				return true
 			}
 		}

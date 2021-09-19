@@ -68,7 +68,7 @@ export class LuaLexer extends BaseLexer {
 		return false
 	}
 	ReadLineComment(): TokenType | false {
-		if (!this.IsValue("-", 0) && this.IsValue("-", 1)) {
+		if (this.IsValue("-", 0) && this.IsValue("-", 1)) {
 			this.Advance(2)
 			while (!this.TheEnd()) {
 				if (this.IsCurrentValue("\n")) break
@@ -85,7 +85,7 @@ export class LuaLexer extends BaseLexer {
 			this.IsValue("[", 2) &&
 			(this.IsValue("[", 3) || this.IsValue("=", 3))
 		) {
-			let start = this.Position
+			let start = this.GetPosition()
 			this.Advance(3)
 
 			while (this.IsCurrentValue("=")) {
@@ -99,7 +99,7 @@ export class LuaLexer extends BaseLexer {
 
 			this.Advance(1)
 
-			let pos = this.FindNearest("]" + "=".repeat(this.Position - start - 5) + "]")
+			let pos = this.FindNearest("]" + "=".repeat(this.GetPosition() - start - 5) + "]")
 			if (pos) {
 				this.SetPosition(pos)
 				return "multiline_comment"
@@ -146,7 +146,7 @@ export class LuaLexer extends BaseLexer {
 				if (!syntax.IsNumber(this.GetCurrentByteChar())) {
 					this.Error(
 						"malformed " + what + " expected number, got " + this.GetCurrentByteChar().toString(),
-						this.Position - 2,
+						this.GetPosition() - 2,
 					)
 				}
 
@@ -282,7 +282,7 @@ export class LuaLexer extends BaseLexer {
 
 		if (
 			syntax.IsNumber(this.GetCurrentByteChar()) ||
-			(this.IsCurrentValue(".") && syntax.IsNumber(this.GetChar(1)))
+			(this.IsCurrentValue(".") && syntax.IsNumber(this.GetByteCharOffset(1)))
 		) {
 			if (this.IsValue("x", 1) || this.IsValue("X", 1)) {
 				ReadHexNumber()
@@ -300,7 +300,7 @@ export class LuaLexer extends BaseLexer {
 
 	ReadMultilineString(): TokenType | false {
 		if (this.IsValue("[", 0) && this.IsValue("[", 1)) {
-			let start = this.Position
+			let start = this.GetPosition()
 			this.Advance(1)
 
 			if (this.IsCurrentValue("=")) {
@@ -313,10 +313,10 @@ export class LuaLexer extends BaseLexer {
 			if (!this.IsCurrentValue("[")) {
 				this.Error(
 					"expected multiline string " +
-						this.GetChars(start, this.Position - 1) +
+						this.GetString(start, this.GetPosition() - 1) +
 						"[" +
 						" got " +
-						this.GetChars(start, this.Position),
+						this.GetString(start, this.GetPosition()),
 					start,
 					start + 1,
 				)
@@ -325,7 +325,7 @@ export class LuaLexer extends BaseLexer {
 
 			this.Advance(1)
 
-			let closing = "]" + "=".repeat(this.Position - start - 2) + "]"
+			let closing = "]" + "=".repeat(this.GetPosition() - start - 2) + "]"
 			let pos = this.FindNearest(closing)
 
 			if (pos) {
@@ -342,7 +342,7 @@ export class LuaLexer extends BaseLexer {
 	ReadQuotedString(name: string, quote: string): TokenType | false {
 		if (!this.IsCurrentValue(quote)) return false
 
-		let start = this.Position
+		let start = this.GetPosition()
 		this.Advance(1)
 
 		while (!this.TheEnd()) {
@@ -356,13 +356,13 @@ export class LuaLexer extends BaseLexer {
 				}
 			} else if (char == B("\n")) {
 				this.Advance(-1)
-				this.Error("expected " + name + " quote to end", start, this.Position - 1)
+				this.Error("expected " + name + " quote to end", start, this.GetPosition() - 1)
 			} else if (char == B(quote)) {
 				return "string"
 			}
 		}
 
-		this.Error("expected " + name + " quote to end: reached end of file", start, this.Position - 1)
+		this.Error("expected " + name + " quote to end: reached end of file", start, this.GetPosition() - 1)
 
 		return "string"
 	}
@@ -401,7 +401,7 @@ export class LuaLexer extends BaseLexer {
 				this.ReadCommentEscape() ||
 				this.ReadMultilineCComment() ||
 				this.ReadLineCComment() ||
-				this.ReadMultilineCComment() ||
+				this.ReadMultilineComment() ||
 				this.ReadLineComment()
 			if (name) return [name, true]
 		}
@@ -419,8 +419,6 @@ export class LuaLexer extends BaseLexer {
 
 			if (name) return [name, false]
 		}
-
-		console.log(this.Position, this.TheEnd(), this.GetLength())
 
 		if (this.ReadEndOfFile()) {
 			return ["end_of_file", false]
