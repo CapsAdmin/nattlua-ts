@@ -139,9 +139,6 @@ abstract class BaseSyntax {
 
 		return token.type
 	}
-	constructor() {
-		this.Build()
-	}
 
 	Build() {
 		const symbols = []
@@ -328,18 +325,20 @@ type TokenType =
 	| "unknown"
 	| TokenWhitespaceType
 
+interface WhitespaceToken {
+	type: TokenWhitespaceType
+	value: string
+	start: number
+	stop: number
+}
+
 class Token {
 	type: TokenType
 	value: string
 	is_whitespace: boolean
 	start: number
 	stop: number
-	whitespace?: {
-		type: TokenWhitespaceType
-		value: string
-		start: number
-		stop: number
-	}
+	whitespace?: Array<WhitespaceToken>
 
 	constructor(type: TokenType, is_whitespace: boolean, start: number, stop: number) {
 		this.type = type
@@ -360,7 +359,7 @@ class Lexer {
 	}
 
 	GetChars(start: number, stop: number): string {
-		return this.Buffer.substr(start, stop - start)
+		return this.Buffer.substr(start, stop - start + 1)
 	}
 
 	GetChar(offset: number): number {
@@ -486,7 +485,6 @@ class Lexer {
 	GetTokens() {
 		this.ResetState()
 		let tokens: Token[] = []
-
 		while (!this.TheEnd()) {
 			let token = this.ReadToken()
 			tokens.push(token)
@@ -498,17 +496,21 @@ class Lexer {
 		}
 
 		let whitespace_buffer = []
-		let non_whitespace_buffer = []
+		let non_whitespace = []
 
 		for (let token of tokens) {
 			if (token.type != "discard") {
-				whitespace_buffer.push(token)
-			} else {
-				non_whitespace_buffer.push(token)
+				if (token.is_whitespace) {
+					whitespace_buffer.push(token)
+				} else {
+					token.whitespace = whitespace_buffer as WhitespaceToken[]
+					non_whitespace.push(token)
+					whitespace_buffer = []
+				}
 			}
 		}
 
-		tokens = non_whitespace_buffer
+		tokens = non_whitespace
 		let last = tokens[tokens.length - 1]
 
 		if (last) {
@@ -537,6 +539,7 @@ class Lexer {
 }
 
 const syntax = new LuaRuntimeSyntax()
+syntax.Build()
 
 class LuaLexer extends Lexer {
 	comment_escape = false
@@ -948,9 +951,12 @@ class LuaLexer extends Lexer {
 				this.ReadLetter() ||
 				this.ReadSymbol()
 
-			if (name) return [name, true]
+			if (name) return [name, false]
 		}
 
 		return this.ReadUnknown()
 	}
 }
+
+let lexer = new LuaLexer("local foo = 1")
+console.log(lexer.GetTokens())
