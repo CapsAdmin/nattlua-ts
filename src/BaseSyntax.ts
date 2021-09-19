@@ -213,31 +213,31 @@ export abstract class BaseSyntax {
 				}
 			}
 
-			for (let key in this.PrimaryBinaryOperators) {
+			for (let key of this.PrimaryBinaryOperators) {
 				this.PrimaryBinaryOperatorsLookup.add(key)
 			}
 
-			for (let key in this.PrefixOperators) {
+			for (let key of this.PrefixOperators) {
 				this.PrefixOperatorsLookup.add(key)
 			}
 
-			for (let key in this.PostfixOperators) {
+			for (let key of this.PostfixOperators) {
 				this.PostfixOperatorsLookup.add(key)
 			}
 
-			for (let key in this.KeywordValues) {
+			for (let key of this.KeywordValues) {
 				this.KeywordValuesLookup.add(key)
 			}
 
-			for (let key in this.KeywordValues) {
+			for (let key of this.KeywordValues) {
 				this.KeywordLookup.add(key)
 			}
 
-			for (let key in this.Keywords) {
+			for (let key of this.Keywords) {
 				this.KeywordLookup.add(key)
 			}
 
-			for (let key in this.NonStandardKeywords) {
+			for (let key of this.NonStandardKeywords) {
 				this.NonStandardKeywordLookup.add(key)
 			}
 		}

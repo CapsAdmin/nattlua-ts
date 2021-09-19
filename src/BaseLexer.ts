@@ -33,7 +33,7 @@ export class BaseLexer {
 	FindNearest(str: string) {
 		let pos = this.Buffer.indexOf(str, this.Position)
 		if (pos == -1) return undefined
-		return pos
+		return pos + str.length
 	}
 
 	ReadChar() {

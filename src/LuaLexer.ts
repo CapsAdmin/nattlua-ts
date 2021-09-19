@@ -99,7 +99,7 @@ export class LuaLexer extends BaseLexer {
 
 			this.Advance(1)
 
-			let pos = this.FindNearest("]" + "=".repeat(this.GetPosition() - start - 5) + "]")
+			let pos = this.FindNearest("]" + "=".repeat(this.GetPosition() - start - 4) + "]")
 			if (pos) {
 				this.SetPosition(pos)
 				return "multiline_comment"
@@ -149,11 +149,11 @@ export class LuaLexer extends BaseLexer {
 						this.GetPosition() - 2,
 					)
 				}
+			}
 
-				while (!this.TheEnd()) {
-					if (!syntax.IsNumber(this.GetCurrentByteChar())) break
-					this.Advance(1)
-				}
+			while (!this.TheEnd()) {
+				if (!syntax.IsNumber(this.GetCurrentByteChar())) break
+				this.Advance(1)
 			}
 
 			return true
@@ -162,6 +162,7 @@ export class LuaLexer extends BaseLexer {
 		const ReadNumberAnnotations = (what: "hex" | "decimal" | "binary") => {
 			if (what == "hex") {
 				if (this.IsCurrentValue("p") || this.IsCurrentValue("P")) return ReadNumberPowExponent("pow")
+			} else if (what == "decimal") {
 				if (this.IsCurrentValue("e") || this.IsCurrentValue("E")) return ReadNumberPowExponent("exponent")
 			}
 			return syntax.ReadNumberAnnotation(this)
@@ -282,7 +283,7 @@ export class LuaLexer extends BaseLexer {
 
 		if (
 			syntax.IsNumber(this.GetCurrentByteChar()) ||
-			(this.IsCurrentValue(".") && syntax.IsNumber(this.GetByteCharOffset(1)))
+			(this.IsCurrentValue(".") && syntax.IsNumber(this.GetByteCharOffset(1)!))
 		) {
 			if (this.IsValue("x", 1) || this.IsValue("X", 1)) {
 				ReadHexNumber()
