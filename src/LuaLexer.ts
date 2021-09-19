@@ -362,7 +362,7 @@ export class LuaLexer extends BaseLexer {
 		return false
 	}
 
-	override Read(): [TokenType, boolean] {
+	override Read(): [TokenType | undefined, boolean] {
 		if (this.ReadRemainingCommentEscape()) return ["discard", false]
 
 		{
@@ -390,10 +390,6 @@ export class LuaLexer extends BaseLexer {
 			if (name) return [name, false]
 		}
 
-		if (this.ReadEndOfFile()) {
-			return ["end_of_file", false]
-		}
-
-		return this.ReadUnknown()
+		return [undefined, false]
 	}
 }

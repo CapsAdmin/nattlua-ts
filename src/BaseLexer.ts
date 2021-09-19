@@ -113,7 +113,7 @@ export class BaseLexer {
 		return ["unknown", false]
 	}
 
-	Read(): [TokenType, boolean] {
+	Read(): [TokenType | undefined, boolean] {
 		return this.ReadUnknown()
 	}
 
@@ -124,7 +124,16 @@ export class BaseLexer {
 		let start = this.Position
 		let [type, is_whitespace] = this.Read()
 
-		is_whitespace = is_whitespace || false
+		if (!type) {
+			if (this.ReadEndOfFile()) {
+				type = "end_of_file"
+				is_whitespace = false
+			}
+		}
+
+		if (!type) {
+			;[type, is_whitespace] = this.ReadUnknown()
+		}
 
 		return [type, is_whitespace, start, this.Position - 1]
 	}
