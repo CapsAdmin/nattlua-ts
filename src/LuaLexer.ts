@@ -4,7 +4,7 @@ import { TokenType } from "./Token"
 
 const B = (str: string) => str.charCodeAt(0)
 
-const syntax = new LuaRuntimeSyntax()
+export const syntax = new LuaRuntimeSyntax()
 syntax.Build()
 
 export class LuaLexer extends BaseLexer {
