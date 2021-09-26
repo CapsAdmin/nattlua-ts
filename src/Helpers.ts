@@ -1,4 +1,4 @@
-class Helpers {
+export class Helpers {
     static LinePositionToSubPosition(code: string, line: number, character: number): number {
         let subPosition = 0;
         let lineCount = 0;
@@ -14,47 +14,40 @@ class Helpers {
         return subPosition + character;
     }
 
-    static SubPositionToLinePosition(code: string, start: number, stop: number): {
-        characterStart: number,
-        characterStop: number,
-
-        lineStart: number,
-        lineStop: number
-
-        subLineBefore: [number, number],
-        subLineAfter: [number, number]
-    } {
-        let lineStart = 0;
-        let lineStop = 0;
-        let characterStart = 0;
-        let characterStop = 0;
-
-        let subLineBefore = [0, 0] as [number, number];
-        let subLineAfter = [0, 0] as [number, number];
-
-        for (let i = 0; i < code.length; i++) {
+    static SubPositionToLinePosition(code: string, pos: number) {
+        let line = 0;
+        let character = 0;
+        for (let i = 0; i < pos; i++) {
             if (code[i] === '\n') {
-                lineStart++;
-                subLineBefore = [lineStart, i];
-            }
-            if (lineStart === start) {
-                characterStart = i;
-            }
-            if (lineStart === stop) {
-                characterStop = i;
-                lineStop = lineStart;
-                subLineAfter = [lineStart, i];
-                break;
+                line++;
+                character = 0;
+            } else {
+                character++;
             }
         }
+        return { line, character };
+    }
 
-        return {
-            characterStart,
-            characterStop,
-            lineStart,
-            lineStop,
-            subLineBefore,
-            subLineAfter
-        };
+    static FindNearest(input: Uint8Array, find: Uint8Array, fromIndex = 0) {
+        
+		for (let i = fromIndex; i < input.byteLength; i++) {
+			let found = true
+			let i2 = 0
+			for (let byte of find) {
+
+				if (input[i + i2] != byte) {
+					found = false
+					break
+				}
+
+				i2++
+			}
+
+			if (found) {
+				return i + i2 
+			}
+		}
+
+        return undefined
     }
 }

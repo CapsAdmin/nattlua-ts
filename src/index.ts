@@ -1,6 +1,6 @@
+import { BaseParser } from "./BaseParser"
 import { LuaLexer } from "./LuaLexer"
 
-let lexer = new LuaLexer("local x2 = 0e0")
-for (let token of lexer.GetTokens()) {
-	console.log(token)
-}
+let lexer = new LuaLexer("§foo")
+let parser = new BaseParser(lexer.GetTokens())
+console.log(parser.ReadNode())

@@ -1,3 +1,5 @@
+import { ParserNode } from "./BaseParser"
+
 export type TokenWhitespaceType = "line_comment" | "multiline_comment" | "comment_escape" | "space"
 export type TokenType =
 	| "type_code"
@@ -21,6 +23,7 @@ export interface WhitespaceToken {
 
 export class Token {
 	type: TokenType
+	parent: ParserNode | undefined
 	value: string
 	is_whitespace: boolean
 	start: number

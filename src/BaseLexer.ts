@@ -1,31 +1,31 @@
+import { Helpers } from "./Helpers"
 import { Token, TokenType, WhitespaceToken } from "./Token"
 
 export class BaseLexer {
-	private Buffer: string
+	private Buffer: Uint8Array
 	private Position: number = 0
 	private Name: string
 
 	// useful when step debugging
 	private CurrentDebugChar: string = ""
+	private CurrentDebugByte: number = 0
 
 	GetLength(): number {
 		return this.Buffer.length
 	}
 
-	GetString(start: number, stop: number): string {
-		return this.Buffer.substr(start, stop - start + 1)
+	GetString(start: number, stop: number) {
+		let ab = this.Buffer.slice(start, stop)
+		
+		return new TextDecoder().decode(ab)
 	}
 
 	GetByteCharOffset(offset: number): number | undefined {
-		let byte = this.Buffer.charCodeAt(this.Position + offset)
-		if (isFinite(byte)) {
-			return byte
-		}
-		return undefined
+		return this.Buffer[this.Position + offset]
 	}
 
-	GetCurrentByteChar(): number {
-		return this.Buffer.charCodeAt(this.Position)
+	GetCurrentByteChar() {
+		return this.Buffer[this.Position] || 0
 	}
 
 	ResetState() {
@@ -33,9 +33,7 @@ export class BaseLexer {
 	}
 
 	FindNearest(str: string) {
-		let pos = this.Buffer.indexOf(str, this.Position)
-		if (pos == -1) return undefined
-		return pos + str.length
+		return Helpers.FindNearest(this.Buffer, new TextEncoder().encode(str), this.Position)
 	}
 
 	ReadChar() {
@@ -50,7 +48,8 @@ export class BaseLexer {
 
 	SetPosition(pos: number) {
 		this.Position = pos
-		this.CurrentDebugChar = this.GetString(this.Position, this.Position)
+		this.CurrentDebugChar = String.fromCharCode(this.GetCurrentByteChar())
+		this.CurrentDebugByte = this.GetCurrentByteChar()
 	}
 
 	GetPosition() {
@@ -76,7 +75,7 @@ export class BaseLexer {
 		return this.IsCurrentByte(what.charCodeAt(0))
 	}
 
-	OnError(code: string, name: string, msg: string, start: number, stop: number) {}
+	OnError(code: Uint8Array, name: string, msg: string, start: number, stop: number) {}
 
 	Error(msg: string, start?: number, stop?: number) {
 		this.OnError(this.Buffer, this.Name, msg, start || this.Position, stop || this.Position)
@@ -88,7 +87,7 @@ export class BaseLexer {
 
 	ReadFromArray(array: string[]) {
 		for (let annotation of array) {
-			if (this.GetString(this.GetPosition(), this.GetPosition() + annotation.length - 1) == annotation) {
+			if (this.GetString(this.GetPosition(), this.GetPosition() + annotation.length) == annotation) {
 				this.Advance(annotation.length)
 				return true
 			}
@@ -129,7 +128,7 @@ export class BaseLexer {
 
 	ReadSimple(): [TokenType, boolean, number, number] {
 		if (this.ReadShebang()) {
-			return ["shebang", false, 0, this.Position - 1]
+			return ["shebang", false, 0, this.Position]
 		}
 		let start = this.Position
 		let [type, is_whitespace] = this.Read()
@@ -145,7 +144,7 @@ export class BaseLexer {
 			;[type, is_whitespace] = this.ReadUnknown()
 		}
 
-		return [type, is_whitespace, start, this.Position - 1]
+		return [type, is_whitespace, start, this.Position]
 	}
 
 	ReadToken() {
@@ -191,20 +190,22 @@ export class BaseLexer {
 		return tokens
 	}
 
-	constructor(code: string) {
-		const remove_bom_header = (code: string) => {
-			if (code.charCodeAt(0) == 0xfeff) {
-				code = code.substr(1)
-			}
-			if (code.charCodeAt(0) == 0xef && code.charCodeAt(1) == 0xbb && code.charCodeAt(2) == 0xbf) {
-				code = code.substr(3)
-			}
-			return code
+	private SkipBOMHeader() {
+		if (this.IsByte(0xFEFF, 0)) {
+			this.Advance(1)
 		}
 
-		this.Buffer = remove_bom_header(code)
+		if (this.IsByte(0xEF, 0) && this.IsByte(0xBB, 1) && this.IsByte(0xBF, 2)) {
+			this.Advance(3)
+		}
+	}
+
+	constructor(code: string) {
+		let buffer = new TextEncoder().encode(code)
+		this.Buffer = buffer
 		this.Name = "unknown"
 		this.SetPosition(0)
 		this.ResetState()
+		this.SkipBOMHeader()
 	}
 }
