@@ -1,5 +1,5 @@
 import { Helpers } from "./Helpers"
-import { Token, TokenType, WhitespaceToken } from "./Token"
+import { Token, TokenType } from "./Token"
 
 export class BaseLexer {
 	private Buffer: Uint8Array
@@ -82,7 +82,15 @@ export class BaseLexer {
 	}
 
 	NewToken(type: TokenType, is_whitespace: boolean, start: number, stop: number) {
-		return new Token(type, is_whitespace, start, stop)
+		let token: Token = {
+			type: type,
+			is_whitespace: is_whitespace,
+			start: start,
+			stop: stop,
+			value: "",
+		} 
+		
+		return token
 	}
 
 	ReadFromArray(array: string[]) {
@@ -148,8 +156,8 @@ export class BaseLexer {
 	}
 
 	ReadToken() {
-		let [a, b, c, d] = this.ReadSimple()
-		return this.NewToken(a, b, c, d)
+		let [token_type, is_whitespace, start, stop] = this.ReadSimple()
+		return this.NewToken(token_type, is_whitespace, start, stop)
 	}
 
 	GetTokens() {
@@ -173,7 +181,7 @@ export class BaseLexer {
 				if (token.is_whitespace) {
 					whitespace_buffer.push(token)
 				} else {
-					token.whitespace = whitespace_buffer as WhitespaceToken[]
+					token.whitespace = whitespace_buffer as Token[]
 					non_whitespace.push(token)
 					whitespace_buffer = []
 				}

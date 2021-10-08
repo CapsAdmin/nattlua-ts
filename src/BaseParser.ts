@@ -3,12 +3,12 @@ import { Helpers } from "./Helpers"
 import { syntax } from "./LuaLexer"
 import { Token, TokenType as string } from "./Token"
 
-interface ValueNode extends ParserNode {
+export interface ValueNode extends ParserNode {
 	Type: "expression"
 	Kind: "value"
 	value: Token
 }
-interface TableNode extends ParserNode {
+export interface TableNode extends ParserNode {
 	Type: "expression"
 	Kind: "table"
 	children: AnyParserNode[]
@@ -22,7 +22,7 @@ interface TableNode extends ParserNode {
 	}
 }
 
-interface PostfixCallExpressionNode extends ParserNode {
+export interface PostfixCallExpressionNode extends ParserNode {
 	Type: "expression"
 	Kind: "postfix_call"
 	expressions: AnyParserNode[]
@@ -35,7 +35,7 @@ interface PostfixCallExpressionNode extends ParserNode {
 	}
 }
 
-interface TableSpreadExpressionNode extends ParserNode {
+export interface TableSpreadExpressionNode extends ParserNode {
 	Type: "expression"
 	Kind: "table_spread"
 	expression: AnyParserNode
@@ -45,14 +45,14 @@ interface TableSpreadExpressionNode extends ParserNode {
 	}
 }
 
-interface PostfixOperatorExpressionNode extends ParserNode {
+export interface PostfixOperatorExpressionNode extends ParserNode {
 	Type: "expression"
 	Kind: "postfix_operator"
 	value: Token
 	left: AnyParserNode
 }
 
-interface PostfixIndexExpressionNode extends ParserNode {
+export interface PostfixIndexExpressionNode extends ParserNode {
 	Type: "expression"
 	Kind: "postfix_expression_index"
 	index: AnyParserNode
@@ -64,14 +64,14 @@ interface PostfixIndexExpressionNode extends ParserNode {
 	}
 }
 
-interface TypeCodeStatement extends ParserNode {
+export interface TypeCodeStatement extends ParserNode {
 	Type: "statement"
 	Kind: "type_code"
 	value: ValueNode
 	lua_code: ValueNode
 }
 
-interface ReturnStatement extends ParserNode {
+export interface ReturnStatement extends ParserNode {
 	Type: "statement"
 	Kind: "return"
 	expressions: AnyParserNode[]
@@ -80,7 +80,7 @@ interface ReturnStatement extends ParserNode {
 	}
 }
 
-interface TableExpressionValueNode extends ParserNode {
+export interface TableExpressionValueNode extends ParserNode {
 	Type: "expression"
 	Kind: "table_value"
 
@@ -95,7 +95,7 @@ interface TableExpressionValueNode extends ParserNode {
 	}
 }
 
-interface TableKeyValueNode extends ParserNode {
+export interface TableKeyValueNode extends ParserNode {
 	Type: "expression"
 	Kind: "table_key_value"
 	value_expression: AnyParserNode
@@ -105,7 +105,7 @@ interface TableKeyValueNode extends ParserNode {
 	}
 }
 
-interface TableIndexNode extends ParserNode {
+export interface TableIndexNode extends ParserNode {
 	Type: "expression"
 	Kind: "table_index_value"
 
@@ -116,14 +116,14 @@ interface TableIndexNode extends ParserNode {
 	key: number
 }
 
-interface ParserCodeStatement extends ParserNode {
+export interface ParserCodeStatement extends ParserNode {
 	Type: "statement"
 	Kind: "parser_code"
 	value: ValueNode
 	lua_code: ValueNode
 }
 
-interface AnalyzerFunctionExpression extends ParserNode {
+export interface AnalyzerFunctionExpression extends ParserNode {
 	Type: "expression"
 	Kind: "analyzer_function"
 	value: ValueNode
@@ -137,7 +137,7 @@ interface AnalyzerFunctionExpression extends ParserNode {
 		["end"]: Token
 	}
 }
-interface FunctionExpression extends ParserNode {
+export interface FunctionExpression extends ParserNode {
 	Type: "expression"
 	Kind: "function"
 	value: ValueNode
@@ -152,7 +152,7 @@ interface FunctionExpression extends ParserNode {
 	}
 }
 
-interface ImportExpression extends ParserNode {
+export interface ImportExpression extends ParserNode {
 	Type: "expression"
 	Kind: "import"
 	path: string
@@ -165,7 +165,7 @@ interface ImportExpression extends ParserNode {
 	}
 }
 
-interface BinaryOperatorExpression extends ParserNode {
+export interface BinaryOperatorExpression extends ParserNode {
 	Type: "expression"
 	Kind: "binary_operator"
 	value: Token
@@ -173,9 +173,9 @@ interface BinaryOperatorExpression extends ParserNode {
 	right: AnyParserNode
 }
 
-interface PrefixOperatorExpression extends ParserNode {
+export interface PrefixOperatorExpression extends ParserNode {
 	Type: "expression"
-	Kind: "binary_operator"
+	Kind: "prefix_operator"
 	value: Token
 	right: AnyParserNode
 	Tokens: ParserNode["Tokens"] & {
@@ -183,7 +183,7 @@ interface PrefixOperatorExpression extends ParserNode {
 	}
 }
 
-type AnyParserNode =
+export type AnyParserNode =
 	| ValueNode
 	| TypeCodeStatement
 	| ReturnStatement
@@ -214,6 +214,8 @@ export class ParserNode {
 	standalone_letter?: ParserNode
 	parser_call?: boolean
 	type_expression?: AnyParserNode
+
+	identifier?: Token | null
 
 	constructor(parser: BaseParser, name: string, code: string) {
 		this.Parser = parser
@@ -352,6 +354,7 @@ export class BaseParser {
 			node.lua_code = code.End()
 			return node.End()
 		}
+		return undefined
 	}
 
 	private ReadMultipleValues<T>(max: number | undefined, reader: () => AnyParserNode | undefined) {
@@ -525,7 +528,7 @@ export class BaseParser {
 			if (!found) break
 			found.left = left_node
 
-			if (left_node.value && left_node.value.value) {
+			if (left_node.Type == "expression" && left_node.Kind == "postfix_operator" && left_node.value && left_node.value.value) {
 				found.parser_call = true
 			}
 
@@ -553,7 +556,7 @@ export class BaseParser {
 			let identifier = this.ReadToken()
 			let token = this.ExpectValue(":")
 			let exp = this.ExpectTypeExpression()
-			exp.tokens[":"] = token
+			exp.Tokens[":"] = token
 			exp.identifier = identifier
 			return exp
 		}
@@ -924,5 +927,13 @@ export class BaseParser {
 		if (this.IsType("end_of_file")) return
 
 		return this.ReadReturn()
+	}
+
+	ReadTypeExpression(priority: number = 0): AnyParserNode | undefined {
+		return undefined
+	}
+
+	ExpectTypeExpression(priority: number = 0): AnyParserNode {
+		return {} as AnyParserNode
 	}
 }

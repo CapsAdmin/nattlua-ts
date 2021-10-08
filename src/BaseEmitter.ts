@@ -301,8 +301,15 @@ export class BaseEmitter {
 		}
 	}
 
-	EmitToken(node: Token, translate: { [key: string]: string } = {}) {
+	Concat() {
+		return this.out.join("")
+	}
+
+	EmitToken(node: Token, translate?: { [key: string]: string } | ((node: Token | string) => string) | string) {
+		
+		
 		/*
+		
         if
 			self.config.extra_indent and
 			self.config.preserve_whitespace == false and
@@ -422,7 +429,7 @@ export class BaseEmitter {
 		then
 			self.last_non_space_index = #self.out
 		end
-        */
+		*/
 
 		if (node.whitespace) {
 			if (this.config.preserve_whitespace == false) {
@@ -461,7 +468,7 @@ export class BaseEmitter {
 		}
 
 		if (translate) {
-			if (typeof translate == "table") {
+			if (typeof translate == "object") {
 				this.Emit(translate[node.value] || node.value)
 			} else if (typeof translate == "function") {
 				this.Emit(translate(node.value))
@@ -475,5 +482,9 @@ export class BaseEmitter {
 		if (node.type != "line_comment" && node.type != "multiline_comment" && node.type != "space") {
 			this.last_non_space_index = this.out.length - 1
 		}
+	}
+
+	TranslateToken(node: string | Token) {
+		return ""
 	}
 }

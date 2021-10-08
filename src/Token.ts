@@ -8,33 +8,18 @@ export type TokenType =
 	| "string"
 	| "number"
 	| "symbol"
-	| "end_of_file"
-	| "shebang"
+	| "end_of_file" // whitespace?
+	| "shebang" // whitespace?
 	| "discard"
 	| "unknown"
 	| TokenWhitespaceType
 
-export interface WhitespaceToken {
-	type: TokenWhitespaceType
-	value: string
-	start: number
-	stop: number
-}
-
-export class Token {
+export interface Token {
 	type: TokenType
-	parent: ParserNode | undefined
+	parent?: ParserNode | undefined
 	value: string
 	is_whitespace: boolean
 	start: number
 	stop: number
-	whitespace?: Array<WhitespaceToken>
-
-	constructor(type: TokenType, is_whitespace: boolean, start: number, stop: number) {
-		this.type = type
-		this.is_whitespace = is_whitespace
-		this.start = start
-		this.stop = stop
-		this.value = ""
-	}
+	whitespace?: Array<Token>
 }
