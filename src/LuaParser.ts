@@ -225,6 +225,33 @@ export interface PrefixOperatorExpression extends ParserNode {
 	}
 }
 
+export interface RepeatStatement extends ParserNode {
+	Type: "statement"
+	Kind: "repeat"
+	statements: AnyParserNode[]
+	expression: AnyParserNode
+	Tokens: ParserNode["Tokens"] & {
+		["repeat"]: Token
+		["until"]: Token
+	}
+}
+
+export interface LocalFunctionStatement extends ParserNode {
+	Type: "statement"
+	Kind: "local_function"
+	identifier: Token
+	return_type: AnyParserNode
+	statements: AnyParserNode[]
+	arguments: AnyParserNode[]
+	Tokens: ParserNode["Tokens"] & {
+		["local"]: Token
+		["function"]: Token
+		["arguments)"]: Token
+		["arguments("]: Token
+		["end"]: Token
+	}
+}
+
 export type AnyParserNode =
 	| ValueNode
 	| TypeCodeStatement
@@ -248,6 +275,8 @@ export type AnyParserNode =
 	| BreakStatement
 	| ContinueStatement
 	| SemicolonStatement
+	| RepeatStatement
+	| LocalFunctionStatement
 
 export class LuaParser extends BaseParser<AnyParserNode> {
 	ReadDebugCode() {
@@ -849,6 +878,28 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 		node.identifier = this.ExpectType("letter")
 		node.Tokens["::right"] = this.ExpectValue("::")
 
+		return node.End()
+	}
+
+	ReadRepeat() {
+		if (!this.IsValue("repeat")) return undefined
+
+		let node = this.Node("statement", "repeat") as RepeatStatement
+		node.Tokens["repeat"] = this.ExpectValue("repeat")
+		node.statements = this.ReadNodes({ until: true })
+		node.Tokens["until"] = this.ExpectValue("until")
+		node.expression = this.ExpectExpression()!
+		return node.End()
+	}
+
+	ReadLocalFunction() {
+		if (!this.IsValue("function")) return undefined
+
+		let node = this.Node("statement", "local_function") as LocalFunctionStatement
+		node.Tokens["function"] = this.ExpectValue("function")
+		node.identifier = this.ExpectType("letter")
+		node.arguments = this.ReadFunctionArguments()
+		node.statements = this.ReadNodes({ end: true })
 		return node.End()
 	}
 
