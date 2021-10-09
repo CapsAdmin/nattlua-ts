@@ -301,7 +301,7 @@ export class BaseEmitter {
 		}
 	}
 
-	Concat() {
+	GetCode() {
 		return this.out.join("")
 	}
 

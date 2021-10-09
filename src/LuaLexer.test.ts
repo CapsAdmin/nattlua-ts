@@ -1,8 +1,10 @@
+import { Code } from "./Code"
 import { LuaLexer } from "./LuaLexer"
 import { LuaRuntimeSyntax } from "./LuaRuntimeSyntax"
 import { Token } from "./Token"
 
-const tokenize = (code: string) => {
+const tokenize = (codeString: string) => {
+	let code = new Code(codeString)
 	return new LuaLexer(code).GetTokens()
 }
 
@@ -37,6 +39,10 @@ test("z escaped string", () => {
 
 test("number..number", () => {
 	expect(tokenize("1..20")).toHaveLength(4)
+})
+
+test("...", () => {
+	expect(one_token(tokenize("...")).type).toBe("symbol")
 })
 
 test("comment escape", () => {

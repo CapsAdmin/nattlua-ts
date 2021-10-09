@@ -1,10 +1,13 @@
 import { BaseParser } from "./BaseParser"
+import { Code } from "./Code"
 import { LuaEmitter } from "./LuaEmitter"
 import { LuaLexer } from "./LuaLexer"
 
-let lexer = new LuaLexer("return 1+2")
-let parser = new BaseParser(lexer.GetTokens())
+let code = new Code("return 10//3", "unknown")
+let lexer = new LuaLexer(code)
+let tokens = lexer.GetTokens()
+let parser = new BaseParser(tokens, code)
 let ast = parser.ReadNode()
 let emitter = new LuaEmitter()
 emitter.EmitStatement(ast)
-console.log(emitter.Concat())
+console.log(emitter.GetCode())

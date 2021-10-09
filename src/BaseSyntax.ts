@@ -155,6 +155,8 @@ export abstract class BaseSyntax {
 			}
 
 			add_binary_symbols(this.BinaryOperators)
+			add_symbols(this.Keywords)
+			add_symbols(this.KeywordValues)
 			add_symbols(this.PrefixOperators)
 			add_symbols(this.PostfixOperators)
 			add_symbols(this.PrimaryBinaryOperators)
@@ -162,6 +164,8 @@ export abstract class BaseSyntax {
 			for (let str of this.SymbolCharacters) {
 				this.symbols.push(str)
 			}
+
+			this.symbols.sort((a, b) => b.length - a.length)
 		}
 
 		{

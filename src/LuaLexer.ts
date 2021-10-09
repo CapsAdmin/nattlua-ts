@@ -57,7 +57,7 @@ export class LuaLexer extends BaseLexer {
 		return false
 	}
 	ReadLineCComment(): TokenType | false {
-		if (!this.IsValue("/", 0) && this.IsValue("/", 1)) {
+		if (this.IsValue("/", 0) && this.IsValue("/", 1)) {
 			this.Advance(2)
 			while (!this.TheEnd()) {
 				if (this.IsCurrentValue("\n")) break

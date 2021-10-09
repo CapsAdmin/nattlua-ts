@@ -1,31 +1,29 @@
+import { Code } from "./Code"
 import { Helpers } from "./Helpers"
 import { Token, TokenType } from "./Token"
 
 export class BaseLexer {
-	private Buffer: Uint8Array
+	private Code: Code
 	private Position: number = 0
-	private Name: string
 
 	// useful when step debugging
 	private CurrentDebugChar: string = ""
 	private CurrentDebugByte: number = 0
 
 	GetLength(): number {
-		return this.Buffer.length
+		return this.Code.GetLength()
 	}
 
 	GetString(start: number, stop: number) {
-		let ab = this.Buffer.slice(start, stop)
-		
-		return new TextDecoder().decode(ab)
+		return this.Code.Substring(start, stop)
 	}
 
-	GetByteCharOffset(offset: number): number | undefined {
-		return this.Buffer[this.Position + offset]
+	GetByteCharOffset(offset: number): number {
+		return this.Code.GetByte(this.Position + offset)
 	}
 
 	GetCurrentByteChar() {
-		return this.Buffer[this.Position] || 0
+		return this.Code.GetByte(this.Position)
 	}
 
 	ResetState() {
@@ -33,7 +31,7 @@ export class BaseLexer {
 	}
 
 	FindNearest(str: string) {
-		return Helpers.FindNearest(this.Buffer, new TextEncoder().encode(str), this.Position)
+		return this.Code.FindNearest(str, this.Position)
 	}
 
 	ReadChar() {
@@ -78,7 +76,7 @@ export class BaseLexer {
 	OnError(code: Uint8Array, name: string, msg: string, start: number, stop: number) {}
 
 	Error(msg: string, start?: number, stop?: number) {
-		this.OnError(this.Buffer, this.Name, msg, start || this.Position, stop || this.Position)
+		this.OnError(this.Code.Buffer, this.Code.Name, msg, start || this.Position, stop || this.Position)
 	}
 
 	NewToken(type: TokenType, is_whitespace: boolean, start: number, stop: number) {
@@ -208,10 +206,8 @@ export class BaseLexer {
 		}
 	}
 
-	constructor(code: string) {
-		let buffer = new TextEncoder().encode(code)
-		this.Buffer = buffer
-		this.Name = "unknown"
+	constructor(code: Code) {
+		this.Code = code
 		this.SetPosition(0)
 		this.ResetState()
 		this.SkipBOMHeader()

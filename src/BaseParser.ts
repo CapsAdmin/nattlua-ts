@@ -1,6 +1,7 @@
 import { Parser } from "prettier"
+import { Code } from "./Code"
 import { Helpers } from "./Helpers"
-import { syntax } from "./LuaLexer"
+import { LuaLexer, syntax } from "./LuaLexer"
 import { Token, TokenType as string } from "./Token"
 
 export interface ValueNode extends ParserNode {
@@ -82,7 +83,7 @@ export interface ReturnStatement extends ParserNode {
 
 export interface TableExpressionValueNode extends ParserNode {
 	Type: "expression"
-	Kind: "table_value"
+	Kind: "table_expression_value"
 
 	expression_key: boolean
 	key_expression: AnyParserNode
@@ -98,6 +99,7 @@ export interface TableExpressionValueNode extends ParserNode {
 export interface TableKeyValueNode extends ParserNode {
 	Type: "expression"
 	Kind: "table_key_value"
+	identifier: Token
 	value_expression: AnyParserNode
 	spread?: TableSpreadExpressionNode
 	Tokens: ParserNode["Tokens"] & {
@@ -105,7 +107,7 @@ export interface TableKeyValueNode extends ParserNode {
 	}
 }
 
-export interface TableIndexNode extends ParserNode {
+export interface TableIndexValueNode extends ParserNode {
 	Type: "expression"
 	Kind: "table_index_value"
 
@@ -189,7 +191,7 @@ export type AnyParserNode =
 	| ReturnStatement
 	| TableExpressionValueNode
 	| TableKeyValueNode
-	| TableIndexNode
+	| TableIndexValueNode
 	| ParserCodeStatement
 	| AnalyzerFunctionExpression
 	| FunctionExpression
@@ -206,8 +208,7 @@ export class ParserNode {
 	Type: "expression" | "statement" = "statement"
 	Kind: string = "unknown"
 	id: number = 0
-	Code: string = ""
-	Name: string = ""
+	Code: Code
 	Parent: ParserNode | undefined
 	Parser: BaseParser
 
@@ -217,8 +218,9 @@ export class ParserNode {
 
 	identifier?: Token | null
 
-	constructor(parser: BaseParser, name: string, code: string) {
+	constructor(parser: BaseParser, code: Code) {
 		this.Parser = parser
+		this.Code = code
 	}
 
 	Tokens: {
@@ -249,15 +251,15 @@ export class BaseParser {
 	Nodes: ParserNode[] = []
 	CurrentStatement?: ParserNode
 	CurrentExpression?: ParserNode
-	Code: string = ""
-	Name: string = ""
+	Code: Code
 	config: {
 		path?: string
 		on_statement?: (node: AnyParserNode) => AnyParserNode | undefined
 	} = {}
 	i: number = 0
-	constructor(tokens: Token[]) {
+	constructor(tokens: Token[], code: Code) {
 		this.Tokens = tokens
+		this.Code = code
 	}
 	GetToken(offset = 0) {
 		return this.Tokens[this.i + offset]
@@ -276,16 +278,34 @@ export class BaseParser {
 		let tk = this.GetToken(offset)
 		return tk && tk.value == value
 	}
-	OnError(code: string, name: string, message: string, start: number, stop: number, ...args: any[]) {
-		console.error(name, message, start, stop, args)
+	OnError(message: string, start: number, stop: number, ...args: any[]) {
+		let reg = new RegExp(/(\$\d)/g)
+		let indexString // $1, $2, $3, etc
+		while ((indexString = reg.exec(message))) {
+			let found = indexString[0]
+			if (!found) break
+			let index = parseInt(found.slice(1))
+			message = message.replace(found, "「" + args[index - 1] + "」")
+		}
+
+		let code = this.Code.GetString()
+		let { line: startLine, character: startCharacter } = Helpers.SubPositionToLinePosition(code, start)
+		let { line: stopLine, character: stopCharacter } = Helpers.SubPositionToLinePosition(code, stop)
+
+		let before = this.Code.Substring(0, start)
+		let middle = this.Code.Substring(start, stop)
+		let after = this.Code.Substring(stop, this.Code.GetLength())
+
+		let name = this.Code.Name + ":" + startLine + ":" + startCharacter
+
 		throw new Error(message)
 	}
 	Error(msg: string, start_token?: Token, stop_token?: Token, ...args: any[]) {
 		let tk = this.GetToken()
 		let start = start_token ? start_token.start : tk ? tk.start : 0
-		let stop = start_token ? start_token.start : tk ? tk.start : 0
+		let stop = stop_token ? stop_token.start : tk ? tk.stop : 0
 
-		this.OnError(this.Code, this.Name, msg, start, stop, ...args)
+		this.OnError(msg, start, stop, ...args)
 	}
 	private ErrorExpect(str: string, what: keyof Token, start?: Token, stop?: Token) {
 		let tk = this.GetToken()
@@ -318,7 +338,7 @@ export class BaseParser {
 	Node(type: ParserNode["Type"], kind: string) {
 		id++
 
-		let node = new ParserNode(this, this.Name, this.Code)
+		let node = new ParserNode(this, this.Code)
 		node.Type = type
 		node.Kind = kind
 
@@ -369,6 +389,21 @@ export class BaseParser {
 		}
 
 		return out
+	}
+
+	AddTokens(tokens: Token[]) {
+		let eof = this.Tokens.pop()
+
+		if (!eof) return
+
+		let i = 0
+		for (let token of tokens) {
+			if (token.type == "end_of_file") break
+			this.Tokens.splice(this.i + i, 1, token)
+			i++
+		}
+
+		this.Tokens.push(eof)
 	}
 
 	GetPreferTypesystem() {
@@ -528,7 +563,12 @@ export class BaseParser {
 			if (!found) break
 			found.left = left_node
 
-			if (left_node.Type == "expression" && left_node.Kind == "postfix_operator" && left_node.value && left_node.value.value) {
+			if (
+				left_node.Type == "expression" &&
+				left_node.Kind == "postfix_operator" &&
+				left_node.value &&
+				left_node.value.value
+			) {
 				found.parser_call = true
 			}
 
@@ -706,6 +746,9 @@ export class BaseParser {
 			return node.End()
 		} else if (this.IsType("letter") && this.IsValue("=", 1)) {
 			let node = this.Node("expression", "table_key_value") as TableKeyValueNode
+			node.identifier = this.ReadToken()!
+			node.Tokens["="] = this.ExpectValue("=")
+
 			let spread = this.ReadTableSpread()
 
 			if (spread) {
@@ -714,11 +757,10 @@ export class BaseParser {
 				node.value_expression = this.ExpectExpression(0)!
 			}
 
-			node.Tokens["="] = this.ExpectValue("=")
 			return node.End()
 		}
 
-		let node = this.Node("expression", "table_index_node") as TableIndexNode
+		let node = this.Node("expression", "table_index_value") as TableIndexValueNode
 
 		let spread = this.ReadTableSpread()
 
@@ -741,7 +783,8 @@ export class BaseParser {
 		tree.Tokens["separators"] = []
 
 		for (let i = 0; i < this.GetLength(); i++) {
-			if (!this.IsValue("}")) break
+			if (this.IsValue("}")) break
+
 			let entry = this.ReadTableEntry(i)
 
 			if (entry.Kind == "table_index_value") {
@@ -779,52 +822,29 @@ export class BaseParser {
 		return tree.End()
 	}
 
-	CheckIntegerDivision(node: AnyParserNode) {
-		/*
-		
-		if node and not node.idiv_resolved then
-			for i, token in ipairs(node.whitespace) do
-				if token.value:find("\n", nil, true) then break end
-				if token.type == "line_comment" and token.value:sub(1, 2) == "//" then
-					table_remove(node.whitespace, i)
-					local tokens = require("nattlua.lexer.lexer")("/idiv" .. token.value:sub(2)):GetTokens()
+	CheckIntegerDivision(token: Token) {
+		if (!token.idiv_resolved && token.whitespace) {
+			for (let i = 0; i < token.whitespace.length; i++) {
+				let whitespace = token.whitespace[i]!
 
-					for _, token in ipairs(tokens) do
-						check_integer_division_operator(parser, token)
-					end
+				if (whitespace.value.indexOf("\n", 0) > -1) break
 
-					parser:AddTokens(tokens)
-					node.idiv_resolved = true
+				if (whitespace.type == "line_comment" && whitespace.value.substring(0, 2) == "//") {
+					token.whitespace.splice(i, 1)
 
-					break
-				end
-			end
-		end
-		*/
-		/*if (node && !node.idiv_resolved) {
-			for (let i = 0; i < node.whitespace.length; i++) {
-				let token = node.whitespace[i]
-
-				if (token.value.indexOf("\n", 0) > -1) break
-
-				if (token.type == "line_comment" && token.value.substring(0, 2) == "//") {
-					node.whitespace.splice(i, 1)
-
-					let tokens = lexer.Lexer.Lex("/idiv" + token.value.substring(2))
+					let tokens = new LuaLexer(new Code("/idiv" + whitespace.value.substring(1))).GetTokens()
 
 					for (let token of tokens) {
-						this.CheckIntegerDivisionOperator(token)
+						this.CheckIntegerDivision(token)
 					}
 
 					this.AddTokens(tokens)
-					node.idiv_resolved = true
+					token.idiv_resolved = true
 
 					break
 				}
-
 			}
 		}
-		*/
 	}
 
 	ReadExpression(priority: number = 0): AnyParserNode | undefined {
@@ -853,7 +873,7 @@ export class BaseParser {
 			}
 		}
 
-		// check_integer_division
+		this.CheckIntegerDivision(this.GetToken()!)
 
 		while (
 			syntax.GetBinaryOperatorInfo(this.GetToken()!) &&
