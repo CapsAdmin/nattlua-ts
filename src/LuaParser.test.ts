@@ -1,12 +1,12 @@
-import { BaseParser } from "./BaseParser"
 import { Code } from "./Code"
 import { LuaEmitter } from "./LuaEmitter"
 import { LuaLexer } from "./LuaLexer"
+import { LuaParser } from "./LuaParser"
 
 const check = (codeString: string, expectedCode?: string) => {
 	let code = new Code(codeString)
 	let lexer = new LuaLexer(code)
-	let parser = new BaseParser(lexer.GetTokens(), code)
+	let parser = new LuaParser(lexer.GetTokens(), code)
 	let ast = parser.ReadNode()
 	let emitter = new LuaEmitter()
 	emitter.EmitStatement(ast!)
