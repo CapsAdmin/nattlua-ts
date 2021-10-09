@@ -28,3 +28,26 @@ test("table", () => {
 test("idiv", () => {
 	check("return 10//3", "return 10/idiv/3")
 })
+
+test("function", () => {
+	check("function foo(lol) return 1+1 end")
+})
+
+test("if", () => {
+	check("if true then end")
+	check("if true then elseif true then end")
+	check("if true then elseif true then else end")
+	check("if true then else end")
+})
+
+test("for", () => {
+	check("for i = 1, 10 do end")
+	check("for i = 1, 10, 4 do end")
+	check("for i = 1+2, 1-10, 4+2 do end")
+})
+
+test("local assignment", () => {
+	check("local foo = 1")
+	check("local foo, bar = 1, 2")
+	check("local foo, bar")
+})

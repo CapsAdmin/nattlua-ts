@@ -2,15 +2,125 @@ import { BaseEmitter } from "./BaseEmitter"
 import {
 	AnyParserNode,
 	BinaryOperatorExpression,
+	DestructureAssignmentStatement,
+	FunctionStatement,
+	GenericFor,
+	IfStatement,
+	LocalAssignmentStatement,
+	LocalDestructureAssignmentStatement,
+	LocalFunctionStatement,
+	NumericFor,
 	ReturnStatement,
-	TableExpressionValueNode,
 	TableNode,
-} from "./BaseParser"
+} from "./LuaParser"
 
 export class LuaEmitter extends BaseEmitter {
 	EmitStatement(statement: AnyParserNode) {
+		if (statement.Type == "expression") {
+			throw new Error("Attempting to emit expression node")
+		}
+
 		if (statement.Kind == "return") {
 			this.EmitReturnStatement(statement)
+		} else if (statement.Kind == "function") {
+			this.EmitFunction(statement)
+		} else if (statement.Kind == "if") {
+			this.EmitIf(statement)
+		} else if (statement.Kind == "generic_for") {
+			this.EmitGenericFor(statement)
+		} else if (statement.Kind == "numeric_for") {
+			this.EmitNumericFor(statement)
+		} else if (statement.Kind == "local_assignment") {
+			this.EmitLocalAssignment(statement)
+		} else if (statement.Kind == "local_destructure_assignment" || statement.Kind == "destructure_assignment") {
+			this.EmitDestructureAssignment(statement)
+		} else {
+			throw new Error("Unknown statement kind: " + statement.Kind)
+		}
+	}
+
+	EmitDestructureAssignment(statement: LocalDestructureAssignmentStatement | DestructureAssignmentStatement) {
+		//this.EmitToken(statement.Tokens["local"])
+		//this.EmitToken(statement.Tokens["="])
+		//this.EmitExpression(statement.expression)
+	}
+
+	EmitIf(node: IfStatement) {
+		let i = 0
+		for (let statements of node.statements) {
+			this.EmitToken(node.Tokens["if/else/elseif"][i]!)
+			if (node.expressions[i]) {
+				this.EmitExpression(node.expressions[i]!)
+				this.EmitToken(node.Tokens["then"][i]!)
+			}
+			this.EmitStatements(statements)
+			i++
+		}
+		this.EmitToken(node.Tokens["end"])
+	}
+
+	EmitLocalAssignment(node: LocalAssignmentStatement) {
+		this.EmitToken(node.Tokens["local"])
+		for (let identifier of node.identifiers) {
+			this.EmitExpression(identifier)
+			if (identifier.Tokens[","]) {
+				this.EmitToken(identifier.Tokens[","])
+			}
+		}
+
+		if (node.Tokens["="]) {
+			this.EmitToken(node.Tokens["="])
+		}
+
+		for (let expression of node.expressions) {
+			this.EmitExpression(expression)
+			if (expression.Tokens[","]) {
+				this.EmitToken(expression.Tokens[","])
+			}
+		}
+	}
+
+	EmitGenericFor(statement: GenericFor) {
+		this.EmitToken(statement.Tokens["for"])
+		this.EmitExpressionList(statement.identifiers)
+		this.EmitToken(statement.Tokens["in"])
+		this.EmitExpressionList(statement.expressions)
+		this.EmitToken(statement.Tokens["do"])
+		this.EmitStatements(statement.statements)
+		this.EmitToken(statement.Tokens["end"])
+	}
+
+	EmitNumericFor(statement: NumericFor) {
+		this.EmitToken(statement.Tokens["for"])
+		this.EmitToken(statement.identifier)
+		this.EmitToken(statement.Tokens["="])
+		this.EmitExpression(statement.init_expression)
+		this.EmitToken(statement.Tokens[",2"][0]!)
+		this.EmitExpression(statement.max_expression)
+		if (statement.Tokens[",2"][1] && statement.step_expression) {
+			this.EmitToken(statement.Tokens[",2"][1])
+			this.EmitExpression(statement.step_expression)
+		}
+		this.EmitToken(statement.Tokens["do"])
+		this.EmitStatements(statement.statements)
+		this.EmitToken(statement.Tokens["end"])
+	}
+
+	EmitFunction(statement: FunctionStatement) {
+		this.EmitToken(statement.Tokens["function"])
+		this.EmitToken(statement.identifier)
+		this.EmitToken(statement.Tokens["arguments("])
+		this.EmitExpressionList(statement.arguments)
+		this.EmitToken(statement.Tokens["arguments)"])
+		this.EmitStatements(statement.statements)
+		this.EmitToken(statement.Tokens["end"])
+	}
+
+	EmitLocalFunction(statement: LocalFunctionStatement) {}
+
+	EmitStatements(statements: AnyParserNode[]) {
+		for (let statement of statements) {
+			this.EmitStatement(statement)
 		}
 	}
 
