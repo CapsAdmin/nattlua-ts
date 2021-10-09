@@ -1,5 +1,6 @@
 import { Code } from "./Code"
 import { Helpers } from "./Helpers"
+import { AnyParserNode } from "./LuaParser"
 import { Token } from "./Token"
 
 export class ParserNode {
@@ -44,7 +45,7 @@ export class ParserNode {
 
 let id = 0
 
-export class BaseParser<T> {
+export class BaseParser<NodeTypes extends ParserNode> {
 	Tokens: Token[] = []
 	Nodes: ParserNode[] = []
 	CurrentStatement?: ParserNode
@@ -68,7 +69,7 @@ export class BaseParser<T> {
 	Advance(offset: number) {
 		this.i += offset
 	}
-	IsType(token_type: string, offset: number = 0) {
+	IsType(token_type: Token["type"], offset: number = 0) {
 		let tk = this.GetToken(offset)
 		return tk && tk.type == token_type
 	}
@@ -112,7 +113,7 @@ export class BaseParser<T> {
 		}
 		this.Error("expected $1 $2: got $3", start, stop, what, str, tk[what])
 	}
-	ExpectType(token_type: string, error_start?: Token, error_stop?: Token) {
+	ExpectType(token_type: Token["type"], error_start?: Token, error_stop?: Token) {
 		if (!this.IsType(token_type)) {
 			this.ErrorExpect(token_type, "type", error_start, error_stop)
 		}
@@ -133,10 +134,10 @@ export class BaseParser<T> {
 		return tk
 	}
 
-	Node(type: ParserNode["Type"], kind: string) {
+	Node<T extends ParserNode["Type"], K extends NodeTypes["Kind"]>(type: T, kind: K) {
 		id++
 
-		let node = new ParserNode(this, this.Code)
+		let node = new ParserNode(this, this.Code) as NodeTypes
 		node.Type = type
 		node.Kind = kind
 
@@ -191,7 +192,7 @@ export class BaseParser<T> {
 		}
 		return out
 	}
-	ReadNode(): T | undefined {
+	ReadNode(): NodeTypes | undefined {
 		if (this.IsType("end_of_file")) return undefined
 
 		return undefined

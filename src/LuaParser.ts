@@ -243,11 +243,17 @@ export type AnyParserNode =
 	| PostfixCallExpressionNode
 	| PostfixOperatorExpressionNode
 	| PostfixIndexExpressionNode
+	| GotoStatement
+	| GotoLabelStatement
+	| BreakStatement
+	| ContinueStatement
+	| SemicolonStatement
 
 export class LuaParser extends BaseParser<AnyParserNode> {
 	ReadDebugCode() {
 		if (this.IsType("type_code")) {
 			let node = this.Node("statement", "type_code") as TypeCodeStatement
+
 			let code = this.Node("expression", "value") as ValueNode
 			code.value = this.ExpectType("type_code")
 			code.End()
