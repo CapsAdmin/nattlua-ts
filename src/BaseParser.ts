@@ -26,7 +26,6 @@ export class ParserNode {
 		["("]?: Token[]
 		[")"]?: Token[]
 		[":"]?: Token
-		[","]?: Token
 		["as"]?: Token
 		["is"]?: Token
 	} = {}

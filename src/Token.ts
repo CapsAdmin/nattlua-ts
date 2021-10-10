@@ -22,4 +22,7 @@ export interface Token {
 	start: number
 	stop: number
 	whitespace?: Array<Token>
+
+	// :(
+	integer_division_resolved?: boolean
 }

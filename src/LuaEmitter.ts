@@ -17,6 +17,7 @@ import {
 	ReturnStatement,
 	TableExpression,
 } from "./LuaParser"
+import { Token } from "./Token"
 
 export class LuaEmitter extends BaseEmitter {
 	EmitStatement(statement: AnyParserNode) {
@@ -52,9 +53,9 @@ export class LuaEmitter extends BaseEmitter {
 	}
 
 	EmitAssignment(statement: AssignmentStatement) {
-		this.EmitExpressionList(statement.left)
+		this.EmitExpressionList(statement.left, statement.Tokens["left,"])
 		this.EmitToken(statement.Tokens["="])
-		this.EmitExpressionList(statement.right)
+		this.EmitExpressionList(statement.right, statement.Tokens["right,"])
 	}
 
 	EmitDestructureAssignment(statement: LocalDestructureAssignmentStatement | DestructureAssignmentStatement) {
@@ -79,10 +80,15 @@ export class LuaEmitter extends BaseEmitter {
 
 	EmitLocalAssignment(node: LocalAssignmentStatement) {
 		this.EmitToken(node.Tokens["local"])
-		for (let identifier of node.identifiers) {
-			this.EmitExpression(identifier)
-			if (identifier.Tokens[","]) {
-				this.EmitToken(identifier.Tokens[","])
+
+		{
+			let i = 0
+			for (let identifier of node.identifiers) {
+				this.EmitExpression(identifier)
+				if (node.Tokens["left,"][i]) {
+					this.EmitToken(node.Tokens["left,"][i]!)
+				}
+				i++
 			}
 		}
 
@@ -90,19 +96,23 @@ export class LuaEmitter extends BaseEmitter {
 			this.EmitToken(node.Tokens["="])
 		}
 
-		for (let expression of node.expressions) {
-			this.EmitExpression(expression)
-			if (expression.Tokens[","]) {
-				this.EmitToken(expression.Tokens[","])
+		{
+			let i = 0
+			for (let expression of node.expressions) {
+				this.EmitExpression(expression)
+				if (node.Tokens["right,"][i]) {
+					this.EmitToken(node.Tokens["right,"][i]!)
+				}
+				i++
 			}
 		}
 	}
 
 	EmitGenericFor(statement: GenericForStatement) {
 		this.EmitToken(statement.Tokens["for"])
-		this.EmitExpressionList(statement.identifiers)
+		this.EmitExpressionList(statement.identifiers, statement.Tokens["left,"])
 		this.EmitToken(statement.Tokens["in"])
-		this.EmitExpressionList(statement.expressions)
+		this.EmitExpressionList(statement.expressions, statement.Tokens["right,"])
 		this.EmitToken(statement.Tokens["do"])
 		this.EmitStatements(statement.statements)
 		this.EmitToken(statement.Tokens["end"])
@@ -128,7 +138,7 @@ export class LuaEmitter extends BaseEmitter {
 		this.EmitToken(statement.Tokens["function"])
 		this.EmitToken(statement.identifier)
 		this.EmitToken(statement.Tokens["arguments("])
-		this.EmitExpressionList(statement.arguments)
+		this.EmitExpressionList(statement.arguments, statement.Tokens["arguments,"])
 		this.EmitToken(statement.Tokens["arguments)"])
 		this.EmitStatements(statement.statements)
 		this.EmitToken(statement.Tokens["end"])
@@ -146,22 +156,24 @@ export class LuaEmitter extends BaseEmitter {
 		this.EmitToken(statement.Tokens["return"])
 		if (statement.expressions.length > 0) {
 			this.Whitespace(" ")
-			this.EmitExpressionList(statement.expressions)
+			this.EmitExpressionList(statement.expressions, statement.Tokens[","])
 		}
 	}
 
-	EmitExpressionList(expressions: AnyParserNode[]) {
+	EmitExpressionList(expressions: AnyParserNode[], separator: Token[]) {
+		let i = 0
 		for (let expression of expressions) {
 			this.EmitExpression(expression)
-			if (expression.Tokens[","]) {
-				this.EmitToken(expression.Tokens[","])
+			if (separator[i]) {
+				this.EmitToken(separator[i]!)
 			}
+			i++
 		}
 	}
 
 	EmitBinaryOperator(expression: BinaryOperatorExpression) {
 		this.EmitExpression(expression.left)
-		this.EmitToken(expression.value)
+		this.EmitToken(expression.operator)
 		this.EmitExpression(expression.right)
 	}
 	EmitTable(tree: TableExpression) {
@@ -220,7 +232,7 @@ export class LuaEmitter extends BaseEmitter {
 	EmitCallExpression(node: PostfixCallExpression) {
 		this.EmitExpression(node.left)
 		this.EmitToken(node.Tokens["call("])
-		this.EmitExpressionList(node.expressions)
+		this.EmitExpressionList(node.expressions, node.Tokens[","])
 		this.EmitToken(node.Tokens["call)"])
 	}
 
