@@ -6,15 +6,16 @@ import {
 	CallExpressionStatement,
 	DestructureAssignmentStatement,
 	FunctionStatement,
-	GenericFor,
+	GenericForStatement,
 	IfStatement,
 	LocalAssignmentStatement,
 	LocalDestructureAssignmentStatement,
 	LocalFunctionStatement,
-	NumericFor,
-	PostfixCallExpressionNode,
+	NumericForStatement,
+	PostfixCallExpression,
+	PostfixIndexExpression,
 	ReturnStatement,
-	TableNode,
+	TableExpression,
 } from "./LuaParser"
 
 export class LuaEmitter extends BaseEmitter {
@@ -97,7 +98,7 @@ export class LuaEmitter extends BaseEmitter {
 		}
 	}
 
-	EmitGenericFor(statement: GenericFor) {
+	EmitGenericFor(statement: GenericForStatement) {
 		this.EmitToken(statement.Tokens["for"])
 		this.EmitExpressionList(statement.identifiers)
 		this.EmitToken(statement.Tokens["in"])
@@ -107,7 +108,7 @@ export class LuaEmitter extends BaseEmitter {
 		this.EmitToken(statement.Tokens["end"])
 	}
 
-	EmitNumericFor(statement: NumericFor) {
+	EmitNumericFor(statement: NumericForStatement) {
 		this.EmitToken(statement.Tokens["for"])
 		this.EmitToken(statement.identifier)
 		this.EmitToken(statement.Tokens["="])
@@ -163,7 +164,7 @@ export class LuaEmitter extends BaseEmitter {
 		this.EmitToken(expression.value)
 		this.EmitExpression(expression.right)
 	}
-	EmitTable(tree: TableNode) {
+	EmitTable(tree: TableExpression) {
 		if (tree.spread) {
 			this.EmitNonSpace(" table.mergetables")
 		}
@@ -216,11 +217,18 @@ export class LuaEmitter extends BaseEmitter {
 		this.EmitToken(tree.Tokens["}"])
 	}
 
-	EmitCallExpression(node: PostfixCallExpressionNode) {
+	EmitCallExpression(node: PostfixCallExpression) {
 		this.EmitExpression(node.left)
 		this.EmitToken(node.Tokens["call("])
 		this.EmitExpressionList(node.expressions)
 		this.EmitToken(node.Tokens["call)"])
+	}
+
+	EmitPostfixExpressionIndex(node: PostfixIndexExpression) {
+		this.EmitExpression(node.left)
+		this.EmitToken(node.Tokens["["])
+		this.EmitExpression(node.index)
+		this.EmitToken(node.Tokens["]"])
 	}
 
 	EmitExpression(expression: AnyParserNode) {
@@ -236,6 +244,8 @@ export class LuaEmitter extends BaseEmitter {
 			this.EmitTable(expression)
 		} else if (expression.Kind == "postfix_call") {
 			this.EmitCallExpression(expression)
+		} else if (expression.Kind == "postfix_expression_index") {
+			this.EmitPostfixExpressionIndex(expression)
 		} else {
 			throw new Error("Unknown expression kind: " + expression.Kind)
 		}

@@ -7,7 +7,7 @@ const check = (codeString: string, expectedCode?: string) => {
 	let code = new Code(codeString)
 	let lexer = new LuaLexer(code)
 	let parser = new LuaParser(lexer.GetTokens(), code)
-	let ast = parser.ReadNode()
+	let ast = parser.ReadStatement()
 	let emitter = new LuaEmitter()
 	emitter.EmitStatement(ast!)
 	expect(emitter.GetCode()).toBe(expectedCode || codeString)
@@ -50,4 +50,10 @@ test("local assignment", () => {
 	check("local foo = 1")
 	check("local foo, bar = 1, 2")
 	check("local foo, bar")
+})
+
+test("call", () => {
+	check("foo.bar['faz'][1+2](1,2)")
+	check("foo.bar()")
+	check("foo.bar(1,2)")
 })

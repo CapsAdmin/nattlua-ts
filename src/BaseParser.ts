@@ -1,6 +1,6 @@
 import { Code } from "./Code"
 import { Helpers } from "./Helpers"
-import { AnyParserNode } from "./LuaParser"
+import { AnyParserNode, StatementNode } from "./LuaParser"
 import { Token } from "./Token"
 
 export class ParserNode {
@@ -179,13 +179,13 @@ export class BaseParser<NodeTypes extends ParserNode> {
 		return false
 	}
 
-	ReadNodes(stop_token: { [key: string]: boolean }) {
+	ReadStatements(stop_token: { [key: string]: boolean }) {
 		let out = []
 		for (let i = 0; i < this.GetLength(); i++) {
 			let tk = this.GetToken()
 			if (!tk) break
 			if (stop_token && stop_token[tk.value]) break
-			let node = this.ReadNode()
+			let node = this.ReadStatement()
 			if (!node) break
 			out[i] = node
 
@@ -195,7 +195,7 @@ export class BaseParser<NodeTypes extends ParserNode> {
 		}
 		return out
 	}
-	ReadNode(): NodeTypes | undefined {
+	ReadStatement(): StatementNode | undefined {
 		if (this.IsType("end_of_file")) return undefined
 
 		return undefined
