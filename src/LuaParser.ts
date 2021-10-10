@@ -666,15 +666,6 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 			if (!found) break
 			found.left = left_node
 
-			if (
-				left_node.Type == "expression" &&
-				left_node.Kind == "postfix_operator" &&
-				left_node.operator &&
-				left_node.operator.value
-			) {
-				found.parser_call = true
-			}
-
 			node = found
 		}
 

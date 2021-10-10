@@ -12,7 +12,6 @@ export class ParserNode {
 	Parser: BaseParser
 
 	standalone_letter?: ParserNode
-	parser_call?: boolean
 	type_expression?: ParserNode
 
 	identifier?: Token | null
