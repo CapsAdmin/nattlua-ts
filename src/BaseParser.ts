@@ -64,26 +64,7 @@ export class BaseParser<NodeTypes extends ParserNode> {
 		return tk && tk.value == value
 	}
 	OnError(message: string, start: number, stop: number, ...args: any[]) {
-		let reg = new RegExp(/(\$\d)/g)
-		let indexString // $1, $2, $3, etc
-		while ((indexString = reg.exec(message))) {
-			let found = indexString[0]
-			if (!found) break
-			let index = parseInt(found.slice(1))
-			message = message.replace(found, "「" + args[index - 1] + "」")
-		}
-
-		let code = this.Code.GetString()
-		let { line: startLine, character: startCharacter } = Helpers.SubPositionToLinePosition(code, start)
-		let { line: stopLine, character: stopCharacter } = Helpers.SubPositionToLinePosition(code, stop)
-
-		let before = this.Code.Substring(0, start)
-		let middle = this.Code.Substring(start, stop)
-		let after = this.Code.Substring(stop, this.Code.GetLength())
-
-		let name = this.Code.Name + ":" + startLine + ":" + startCharacter
-
-		throw new Error(message)
+		throw new Error(Helpers.FormatError(this.Code, message, start, stop, args))
 	}
 	Error(msg: string, start_token?: Token, stop_token?: Token, ...args: any[]) {
 		let tk = this.GetToken()

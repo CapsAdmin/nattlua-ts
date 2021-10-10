@@ -14,6 +14,14 @@ const one_token = (tokens: Token[]) => {
 	return tokens[0]!
 }
 
+test("unclosed multiline comment", () => {
+	try {
+		let tokens = tokenize("--[[")
+	} catch (err: Error) {
+		expect(err.message).toBe("Unclosed multiline comment")
+	}
+})
+
 test("smoke", () => {
 	expect(tokenize("")[0]?.type).toBe("end_of_file")
 	expect(one_token(tokenize("a")).type).toBe("letter")
@@ -41,6 +49,16 @@ test("number..number", () => {
 	expect(tokenize("1..20")).toHaveLength(4)
 })
 
+test("decimal number", () => {
+	expect(tokenize("0.01")).toHaveLength(2)
+	expect(tokenize("0.000_001")).toHaveLength(2)
+	expect(tokenize("0.000_00.1")).toHaveLength(3)
+})
+
+test("luajit binary number", () => {
+	expect(tokenize("0b010101")).toHaveLength(2)
+	expect(tokenize("0b0_101_01 0b101")).toHaveLength(3)
+})
 test("...", () => {
 	expect(one_token(tokenize("...")).type).toBe("symbol")
 })

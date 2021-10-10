@@ -73,10 +73,12 @@ export class BaseLexer {
 		return this.IsCurrentByte(what.charCodeAt(0))
 	}
 
-	OnError(code: Uint8Array, name: string, msg: string, start: number, stop: number) {}
+	OnError(message: string, start: number, stop: number, ...args: any[]) {
+		throw new Error(Helpers.FormatError(this.Code, message, start, stop, args))
+	}
 
-	Error(msg: string, start?: number, stop?: number) {
-		this.OnError(this.Code.Buffer, this.Code.Name, msg, start || this.Position, stop || this.Position)
+	Error(message: string, start?: number, stop?: number, ...args: any[]) {
+		this.OnError(message, start || this.Position, stop || this.Position, args)
 	}
 
 	NewToken(type: TokenType, is_whitespace: boolean, start: number, stop: number) {
@@ -86,8 +88,8 @@ export class BaseLexer {
 			start: start,
 			stop: stop,
 			value: "",
-		} 
-		
+		}
+
 		return token
 	}
 
@@ -197,11 +199,11 @@ export class BaseLexer {
 	}
 
 	private SkipBOMHeader() {
-		if (this.IsByte(0xFEFF, 0)) {
+		if (this.IsByte(0xfeff, 0)) {
 			this.Advance(1)
 		}
 
-		if (this.IsByte(0xEF, 0) && this.IsByte(0xBB, 1) && this.IsByte(0xBF, 2)) {
+		if (this.IsByte(0xef, 0) && this.IsByte(0xbb, 1) && this.IsByte(0xbf, 2)) {
 			this.Advance(3)
 		}
 	}
