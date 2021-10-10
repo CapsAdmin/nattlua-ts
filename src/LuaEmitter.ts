@@ -16,18 +16,31 @@ import {
 	PostfixIndexExpression,
 	ReturnStatement,
 	TableExpression,
+	AnalyzerDebugCodeStatement,
+	ParserDebugCodeStatement,
+	ExpressionNode,
+	StatementNode,
+	DoStatement,
+	WhileStatement,
+	PostfixOperatorExpression,
+	PrefixOperatorExpression,
+	FunctionExpression,
+	BreakStatement,
+	ContinueStatement,
+	SemicolonStatement,
+	GotoStatement,
+	GotoLabelStatement,
+	RepeatStatement,
 } from "./LuaParser"
 import { Token } from "./Token"
 
 export class LuaEmitter extends BaseEmitter {
-	EmitStatement(statement: AnyParserNode) {
-		if (statement.Type == "expression") {
-			throw new Error("Attempting to emit expression node")
-		}
-
+	EmitStatement(statement: StatementNode) {
 		if (statement.Kind == "return") {
 			this.EmitReturnStatement(statement)
 		} else if (statement.Kind == "function") {
+			this.EmitFunction(statement)
+		} else if (statement.Kind == "local_function") {
 			this.EmitFunction(statement)
 		} else if (statement.Kind == "if") {
 			this.EmitIf(statement)
@@ -43,9 +56,78 @@ export class LuaEmitter extends BaseEmitter {
 			this.EmitCallExpressionStatement(statement)
 		} else if (statement.Kind == "assignment") {
 			this.EmitAssignment(statement)
+		} else if (statement.Kind == "parser_debug_code") {
+			this.EmitParserDebugCode(statement)
+		} else if (statement.Kind == "analyzer_debug_code") {
+			this.EmitAnalyzerDebugCode(statement)
+		} else if (statement.Kind == "do") {
+			this.EmitDo(statement)
+		} else if (statement.Kind == "break") {
+			this.EmitBreak(statement)
+		} else if (statement.Kind == "continue") {
+			this.EmitContinue(statement)
+		} else if (statement.Kind == "semicolon") {
+			this.EmitSemicolon(statement)
+		} else if (statement.Kind == "goto") {
+			this.EmitGoto(statement)
+		} else if (statement.Kind == "goto_label") {
+			this.EmitGotoLabel(statement)
+		} else if (statement.Kind == "while") {
+			this.EmitWhile(statement)
+		} else if (statement.Kind == "repeat") {
+			this.EmitRepeat(statement)
 		} else {
 			throw new Error("Unknown statement kind: " + statement.Kind)
 		}
+	}
+
+	EmitBreak(statement: BreakStatement) {
+		this.EmitToken(statement.Tokens["break"])
+	}
+	EmitRepeat(statement: RepeatStatement) {
+		this.EmitToken(statement.Tokens["repeat"])
+		this.EmitStatements(statement.statements)
+		this.EmitToken(statement.Tokens["until"])
+		this.EmitExpression(statement.expression)
+	}
+	EmitContinue(statement: ContinueStatement) {
+		this.EmitToken(statement.Tokens["continue"])
+	}
+	EmitSemicolon(statement: SemicolonStatement) {
+		this.EmitToken(statement.Tokens[";"])
+	}
+	EmitGoto(statement: GotoStatement) {
+		this.EmitToken(statement.Tokens["goto"])
+		this.EmitToken(statement.identifier)
+	}
+	EmitGotoLabel(statement: GotoLabelStatement) {
+		this.EmitToken(statement.Tokens["::left"])
+		this.EmitToken(statement.identifier)
+		this.EmitToken(statement.Tokens["::right"])
+	}
+
+	EmitDo(statement: DoStatement) {
+		this.EmitToken(statement.Tokens["do"])
+		this.EmitStatements(statement.statements)
+		this.EmitToken(statement.Tokens["end"])
+	}
+
+	EmitWhile(statement: WhileStatement) {
+		this.EmitToken(statement.Tokens["while"])
+		this.EmitExpression(statement.expression)
+		this.EmitToken(statement.Tokens["do"])
+		this.EmitStatements(statement.statements)
+		this.EmitToken(statement.Tokens["end"])
+	}
+
+	EmitParserDebugCode(statement: ParserDebugCodeStatement) {
+		this.EmitToken(statement.Tokens["£"])
+		this.EmitExpression(statement.lua_code)
+	}
+
+	EmitAnalyzerDebugCode(statement: AnalyzerDebugCodeStatement) {
+		this.EmitToken(statement.Tokens["§"])
+		this.EmitExpression(statement.lua_code)
 	}
 
 	EmitCallExpressionStatement(statement: CallExpressionStatement) {
@@ -58,10 +140,53 @@ export class LuaEmitter extends BaseEmitter {
 		this.EmitExpressionList(statement.right, statement.Tokens["right,"])
 	}
 
-	EmitDestructureAssignment(statement: LocalDestructureAssignmentStatement | DestructureAssignmentStatement) {
-		//this.EmitToken(statement.Tokens["local"])
-		//this.EmitToken(statement.Tokens["="])
-		//this.EmitExpression(statement.expression)
+	EmitDestructureAssignment(node: LocalDestructureAssignmentStatement | DestructureAssignmentStatement) {
+		this.Whitespace("\t")
+
+		if (node.Kind == "local_destructure_assignment") {
+			this.EmitToken(node.Tokens["local"])
+		}
+
+		if (node.default) {
+			this.EmitToken(node.Tokens["{"], "")
+			this.EmitToken(node.default.value)
+			this.EmitToken(node.default_comma)
+		} else {
+			this.EmitToken(node.Tokens["{"], "")
+		}
+
+		this.Whitespace(" ")
+		this.EmitExpressionList(node.left, node.Tokens[","])
+		this.EmitToken(node.Tokens["}"], "")
+		this.Whitespace(" ")
+		this.EmitToken(node.Tokens["="])
+		this.Whitespace(" ")
+		this.EmitNonSpace("table.destructure(")
+		this.EmitExpression(node.right)
+		this.EmitNonSpace(",")
+		this.EmitSpace(" ")
+		this.EmitNonSpace("{")
+
+		for (let i = 0; i < node.left.length; i++) {
+			this.EmitNonSpace('"')
+			this.Emit(node.left[i]!.value.value)
+			this.EmitNonSpace('"')
+
+			if (i < node.left.length - 1) {
+				this.EmitNonSpace(",")
+				this.EmitSpace(" ")
+			}
+		}
+
+		this.EmitNonSpace("}")
+
+		if (node.default) {
+			this.EmitNonSpace(",")
+			this.EmitSpace(" ")
+			this.EmitNonSpace("true")
+		}
+
+		this.EmitNonSpace(")")
 	}
 
 	EmitIf(node: IfStatement) {
@@ -108,59 +233,67 @@ export class LuaEmitter extends BaseEmitter {
 		}
 	}
 
-	EmitGenericFor(statement: GenericForStatement) {
-		this.EmitToken(statement.Tokens["for"])
-		this.EmitExpressionList(statement.identifiers, statement.Tokens["left,"])
-		this.EmitToken(statement.Tokens["in"])
-		this.EmitExpressionList(statement.expressions, statement.Tokens["right,"])
-		this.EmitToken(statement.Tokens["do"])
-		this.EmitStatements(statement.statements)
-		this.EmitToken(statement.Tokens["end"])
+	EmitGenericFor(node: GenericForStatement) {
+		this.EmitToken(node.Tokens["for"])
+		this.EmitExpressionList(node.identifiers, node.Tokens["left,"])
+		this.EmitToken(node.Tokens["in"])
+		this.EmitExpressionList(node.expressions, node.Tokens["right,"])
+		this.EmitToken(node.Tokens["do"])
+		this.EmitStatements(node.statements)
+		this.EmitToken(node.Tokens["end"])
 	}
 
-	EmitNumericFor(statement: NumericForStatement) {
-		this.EmitToken(statement.Tokens["for"])
-		this.EmitToken(statement.identifier)
-		this.EmitToken(statement.Tokens["="])
-		this.EmitExpression(statement.init_expression)
-		this.EmitToken(statement.Tokens[",2"][0]!)
-		this.EmitExpression(statement.max_expression)
-		if (statement.Tokens[",2"][1] && statement.step_expression) {
-			this.EmitToken(statement.Tokens[",2"][1])
-			this.EmitExpression(statement.step_expression)
+	EmitNumericFor(node: NumericForStatement) {
+		this.EmitToken(node.Tokens["for"])
+		this.EmitToken(node.identifier)
+		this.EmitToken(node.Tokens["="])
+		this.EmitExpression(node.init_expression)
+		this.EmitToken(node.Tokens[",2"][0]!)
+		this.EmitExpression(node.max_expression)
+		if (node.Tokens[",2"][1] && node.step_expression) {
+			this.EmitToken(node.Tokens[",2"][1])
+			this.EmitExpression(node.step_expression)
 		}
-		this.EmitToken(statement.Tokens["do"])
-		this.EmitStatements(statement.statements)
-		this.EmitToken(statement.Tokens["end"])
+		this.EmitToken(node.Tokens["do"])
+		this.EmitStatements(node.statements)
+		this.EmitToken(node.Tokens["end"])
 	}
 
-	EmitFunction(statement: FunctionStatement) {
-		this.EmitToken(statement.Tokens["function"])
-		this.EmitToken(statement.identifier)
-		this.EmitToken(statement.Tokens["arguments("])
-		this.EmitExpressionList(statement.arguments, statement.Tokens["arguments,"])
-		this.EmitToken(statement.Tokens["arguments)"])
-		this.EmitStatements(statement.statements)
-		this.EmitToken(statement.Tokens["end"])
+	EmitFunction(node: FunctionStatement | LocalFunctionStatement | FunctionExpression) {
+		if (node.Kind == "local_function") {
+			this.EmitToken(node.Tokens["local"])
+		}
+
+		this.EmitToken(node.Tokens["function"])
+
+		if (node.Type == "statement") {
+			this.EmitToken(node.identifier)
+		}
+
+		this.EmitToken(node.Tokens["arguments("])
+		this.EmitExpressionList(node.arguments, node.Tokens["arguments,"])
+		this.EmitToken(node.Tokens["arguments)"])
+		this.EmitStatements(node.statements)
+		this.EmitToken(node.Tokens["end"])
 	}
 
-	EmitLocalFunction(statement: LocalFunctionStatement) {}
+	EmitLocalFunction(node: LocalFunctionStatement) {}
 
-	EmitStatements(statements: AnyParserNode[]) {
+	EmitStatements(statements: StatementNode[]) {
 		for (let statement of statements) {
 			this.EmitStatement(statement)
 		}
 	}
 
-	EmitReturnStatement(statement: ReturnStatement) {
-		this.EmitToken(statement.Tokens["return"])
-		if (statement.expressions.length > 0) {
+	EmitReturnStatement(node: ReturnStatement) {
+		this.EmitToken(node.Tokens["return"])
+		if (node.expressions.length > 0) {
 			this.Whitespace(" ")
-			this.EmitExpressionList(statement.expressions, statement.Tokens[","])
+			this.EmitExpressionList(node.expressions, node.Tokens[","])
 		}
 	}
 
-	EmitExpressionList(expressions: AnyParserNode[], separator: Token[]) {
+	EmitExpressionList(expressions: ExpressionNode[], separator: Token[]) {
 		let i = 0
 		for (let expression of expressions) {
 			this.EmitExpression(expression)
@@ -175,6 +308,15 @@ export class LuaEmitter extends BaseEmitter {
 		this.EmitExpression(expression.left)
 		this.EmitToken(expression.operator)
 		this.EmitExpression(expression.right)
+	}
+	EmitPrefixOperator(expression: PrefixOperatorExpression) {
+		this.EmitToken(expression.operator)
+		this.EmitExpression(expression.right)
+	}
+
+	EmitPostfixOperator(expression: PostfixOperatorExpression) {
+		this.EmitExpression(expression.left)
+		this.EmitToken(expression.operator)
 	}
 	EmitTable(tree: TableExpression) {
 		if (tree.spread) {
@@ -231,9 +373,11 @@ export class LuaEmitter extends BaseEmitter {
 
 	EmitCallExpression(node: PostfixCallExpression) {
 		this.EmitExpression(node.left)
-		this.EmitToken(node.Tokens["call("])
-		this.EmitExpressionList(node.expressions, node.Tokens[","])
-		this.EmitToken(node.Tokens["call)"])
+		if (node.Tokens["arguments("]) this.EmitToken(node.Tokens["arguments("])
+
+		this.EmitExpressionList(node.arguments, node.Tokens[","])
+
+		if (node.Tokens["arguments)"]) this.EmitToken(node.Tokens["arguments)"])
 	}
 
 	EmitPostfixExpressionIndex(node: PostfixIndexExpression) {
@@ -243,23 +387,37 @@ export class LuaEmitter extends BaseEmitter {
 		this.EmitToken(node.Tokens["]"])
 	}
 
-	EmitExpression(expression: AnyParserNode) {
-		if (expression.Type == "statement") {
-			throw new Error("Attempting to emit expression node")
+	EmitExpression(expression: ExpressionNode) {
+		if (expression.Tokens["("]) {
+			for (let token of expression.Tokens["("]) {
+				this.EmitToken(token)
+			}
 		}
 
 		if (expression.Kind == "value") {
 			this.EmitToken(expression.value)
 		} else if (expression.Kind == "binary_operator") {
 			this.EmitBinaryOperator(expression)
+		} else if (expression.Kind == "prefix_operator") {
+			this.EmitPrefixOperator(expression)
+		} else if (expression.Kind == "postfix_operator") {
+			this.EmitPostfixOperator(expression)
 		} else if (expression.Kind == "table") {
 			this.EmitTable(expression)
 		} else if (expression.Kind == "postfix_call") {
 			this.EmitCallExpression(expression)
 		} else if (expression.Kind == "postfix_expression_index") {
 			this.EmitPostfixExpressionIndex(expression)
+		} else if (expression.Kind == "function") {
+			this.EmitFunction(expression)
 		} else {
 			throw new Error("Unknown expression kind: " + expression.Kind)
+		}
+
+		if (expression.Tokens[")"]) {
+			for (let token of expression.Tokens[")"]) {
+				this.EmitToken(token)
+			}
 		}
 	}
 }

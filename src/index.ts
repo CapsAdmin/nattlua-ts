@@ -4,11 +4,11 @@ import { LuaEmitter } from "./LuaEmitter"
 import { LuaLexer } from "./LuaLexer"
 import { LuaParser } from "./LuaParser"
 
-let code = new Code("foo.bar['faz'][1+2](1,2)")
+let code = new Code("local x = 1;")
 let lexer = new LuaLexer(code)
 let tokens = lexer.GetTokens()
 let parser = new LuaParser(tokens, code)
-let ast = parser.ReadStatement()
+let statements = parser.ReadStatements()
 let emitter = new LuaEmitter()
-emitter.EmitStatement(ast)
+emitter.EmitStatements(statements)
 console.log(emitter.GetCode())

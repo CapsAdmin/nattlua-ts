@@ -306,8 +306,6 @@ export class BaseEmitter {
 	}
 
 	EmitToken(node: Token, translate?: { [key: string]: string } | ((node: Token | string) => string) | string) {
-		
-		
 		/*
 		
         if
@@ -467,12 +465,12 @@ export class BaseEmitter {
 			translate = this.TranslateToken(node) || translate
 		}
 
-		if (translate) {
+		if (translate !== undefined) {
 			if (typeof translate == "object") {
 				this.Emit(translate[node.value] || node.value)
 			} else if (typeof translate == "function") {
 				this.Emit(translate(node.value))
-			} else if (translate != "") {
+			} else if (translate !== "") {
 				this.Emit(translate)
 			}
 		} else {

@@ -2,8 +2,8 @@ import { ParserNode } from "./BaseParser"
 
 export type TokenWhitespaceType = "line_comment" | "multiline_comment" | "comment_escape" | "space"
 export type TokenType =
-	| "type_code"
-	| "parser_code"
+	| "analyzer_debug_code"
+	| "parser_debug_code"
 	| "letter"
 	| "string"
 	| "number"

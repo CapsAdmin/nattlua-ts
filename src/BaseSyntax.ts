@@ -147,7 +147,7 @@ export abstract class BaseSyntax {
 				for (let group of tbl) {
 					for (let token of group) {
 						if (token.substr(0, 1) == "R") {
-							token = token.substr(1, 1)
+							token = token.substr(1)
 						}
 						this.symbols.push(token)
 					}
@@ -193,7 +193,7 @@ export abstract class BaseSyntax {
 			for (let [priority, group] of this.BinaryOperators.entries()) {
 				for (let token of group) {
 					if (token.substr(0, 1) == "R") {
-						this.binary_operator_info[token.substr(1, 1)] = {
+						this.binary_operator_info[token.substr(1)] = {
 							left_priority: priority + 1,
 							right_priority: priority,
 						}

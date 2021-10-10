@@ -112,6 +112,7 @@ export class LuaLexer extends BaseLexer {
 	}
 
 	ReadInlineTypeCode(): TokenType | false {
+		// this is '§'
 		if (this.IsByte(194, 0) && this.IsByte(167, 1)) {
 			this.Advance(1)
 
@@ -119,11 +120,12 @@ export class LuaLexer extends BaseLexer {
 				if (this.IsCurrentValue("\n")) break
 				this.Advance(1)
 			}
-			return "type_code"
+			return "analyzer_debug_code"
 		}
 		return false
 	}
 	ReadInlineParserCode(): TokenType | false {
+		// this is '£'
 		if (this.IsByte(194, 0) && this.IsByte(163, 1)) {
 			this.Advance(1)
 
@@ -131,7 +133,7 @@ export class LuaLexer extends BaseLexer {
 				if (this.IsCurrentValue("\n")) break
 				this.Advance(1)
 			}
-			return "parser_code"
+			return "parser_debug_code"
 		}
 		return false
 	}

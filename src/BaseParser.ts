@@ -7,19 +7,11 @@ export class ParserNode {
 	Type: "expression" | "statement" = "statement"
 	Kind: string = "unknown"
 	id: number = 0
-	Code: Code
 	Parent: ParserNode | undefined
-	Parser: BaseParser
-
 	standalone_letter?: ParserNode
 	type_expression?: ParserNode
 
 	identifier?: Token | null
-
-	constructor(parser: BaseParser, code: Code) {
-		this.Parser = parser
-		this.Code = code
-	}
 
 	Tokens: {
 		["("]?: Token[]
@@ -35,10 +27,6 @@ export class ParserNode {
 	}
 
 	GetLength() {}
-	End() {
-		this.Parser.Nodes.splice(1, 1)[0]
-		return this
-	}
 }
 
 let id = 0
@@ -132,13 +120,13 @@ export class BaseParser<NodeTypes extends ParserNode> {
 		return tk
 	}
 
-	Node<
+	StartNode<
 		Type extends Extract<NodeTypes, { Kind: Kind }>["Type"],
 		Kind extends Extract<NodeTypes, { Type: Type }>["Kind"],
 	>(type: Type, kind: Kind): Extract<NodeTypes, { Type: Type; Kind: Kind }> {
 		id++
 
-		let node = new ParserNode(this, this.Code) as NodeTypes
+		let node = new ParserNode()
 		node.Type = type
 		node.Kind = kind
 
@@ -154,6 +142,11 @@ export class BaseParser<NodeTypes extends ParserNode> {
 		this.Nodes.unshift(node)
 
 		return node as Extract<NodeTypes, { Type: Type; Kind: Kind }>
+	}
+
+	EndNode<T>(node: T) {
+		this.Nodes.splice(1, 1)[0]
+		return node
 	}
 
 	OnNode(node: ParserNode) {}
@@ -177,7 +170,7 @@ export class BaseParser<NodeTypes extends ParserNode> {
 		return false
 	}
 
-	ReadStatements(stop_token: { [key: string]: boolean }) {
+	ReadStatements(stop_token?: { [key: string]: boolean }) {
 		let out = []
 		for (let i = 0; i < this.GetLength(); i++) {
 			let tk = this.GetToken()
