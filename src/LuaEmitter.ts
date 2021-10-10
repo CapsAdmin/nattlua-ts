@@ -1,7 +1,9 @@
 import { BaseEmitter } from "./BaseEmitter"
 import {
 	AnyParserNode,
+	AssignmentStatement,
 	BinaryOperatorExpression,
+	CallExpressionStatement,
 	DestructureAssignmentStatement,
 	FunctionStatement,
 	GenericFor,
@@ -10,6 +12,7 @@ import {
 	LocalDestructureAssignmentStatement,
 	LocalFunctionStatement,
 	NumericFor,
+	PostfixCallExpressionNode,
 	ReturnStatement,
 	TableNode,
 } from "./LuaParser"
@@ -34,9 +37,23 @@ export class LuaEmitter extends BaseEmitter {
 			this.EmitLocalAssignment(statement)
 		} else if (statement.Kind == "local_destructure_assignment" || statement.Kind == "destructure_assignment") {
 			this.EmitDestructureAssignment(statement)
+		} else if (statement.Kind == "call_expression") {
+			this.EmitCallExpressionStatement(statement)
+		} else if (statement.Kind == "assignment") {
+			this.EmitAssignment(statement)
 		} else {
 			throw new Error("Unknown statement kind: " + statement.Kind)
 		}
+	}
+
+	EmitCallExpressionStatement(statement: CallExpressionStatement) {
+		this.EmitExpression(statement.expression)
+	}
+
+	EmitAssignment(statement: AssignmentStatement) {
+		this.EmitExpressionList(statement.left)
+		this.EmitToken(statement.Tokens["="])
+		this.EmitExpressionList(statement.right)
 	}
 
 	EmitDestructureAssignment(statement: LocalDestructureAssignmentStatement | DestructureAssignmentStatement) {
@@ -199,13 +216,26 @@ export class LuaEmitter extends BaseEmitter {
 		this.EmitToken(tree.Tokens["}"])
 	}
 
+	EmitCallExpression(node: PostfixCallExpressionNode) {
+		this.EmitExpression(node.left)
+		this.EmitToken(node.Tokens["call("])
+		this.EmitExpressionList(node.expressions)
+		this.EmitToken(node.Tokens["call)"])
+	}
+
 	EmitExpression(expression: AnyParserNode) {
+		if (expression.Type == "statement") {
+			throw new Error("Attempting to emit expression node")
+		}
+
 		if (expression.Kind == "value") {
 			this.EmitToken(expression.value)
 		} else if (expression.Kind == "binary_operator") {
 			this.EmitBinaryOperator(expression)
 		} else if (expression.Kind == "table") {
 			this.EmitTable(expression)
+		} else if (expression.Kind == "postfix_call") {
+			this.EmitCallExpression(expression)
 		} else {
 			throw new Error("Unknown expression kind: " + expression.Kind)
 		}

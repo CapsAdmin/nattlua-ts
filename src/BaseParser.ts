@@ -134,7 +134,10 @@ export class BaseParser<NodeTypes extends ParserNode> {
 		return tk
 	}
 
-	Node<T extends ParserNode["Type"], K extends NodeTypes["Kind"]>(type: T, kind: K) {
+	Node<
+		Type extends Extract<NodeTypes, { Kind: Kind }>["Type"],
+		Kind extends Extract<NodeTypes, { Type: Type }>["Kind"],
+	>(type: Type, kind: Kind): Extract<NodeTypes, { Type: Type; Kind: Kind }> {
 		id++
 
 		let node = new ParserNode(this, this.Code) as NodeTypes
@@ -152,7 +155,7 @@ export class BaseParser<NodeTypes extends ParserNode> {
 		node.Parent = this.Nodes[0]
 		this.Nodes.unshift(node)
 
-		return node
+		return node as Extract<NodeTypes, { Type: Type; Kind: Kind }>
 	}
 
 	OnNode(node: ParserNode) {}
