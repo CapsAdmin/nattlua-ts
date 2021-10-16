@@ -266,7 +266,11 @@ export class LuaEmitter extends BaseEmitter {
 		this.EmitToken(node.Tokens["function"])
 
 		if (node.Type == "statement") {
-			this.EmitToken(node.identifier)
+			if (node.Kind == "local_function") {
+				this.EmitToken(node.label)
+			} else {
+				this.EmitExpression(node.index_expression)
+			}
 		}
 
 		this.EmitToken(node.Tokens["arguments("])

@@ -11,8 +11,6 @@ export class ParserNode {
 	standalone_letter?: ParserNode
 	type_expression?: ParserNode
 
-	identifier?: Token | null
-
 	Tokens: {
 		["("]?: Token[]
 		[")"]?: Token[]
