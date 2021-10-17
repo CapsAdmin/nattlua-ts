@@ -1,9 +1,11 @@
 import { BaseLexer } from "./BaseLexer"
 import { LuaRuntimeSyntax } from "./LuaRuntimeSyntax"
+import { LuaTypesystemSyntax } from "./LuaTypesystemSyntax"
 import { TokenType } from "./Token"
 
 const B = (str: string) => str.charCodeAt(0)
 
+export const syntax_typesystem = new LuaTypesystemSyntax()
 export const syntax = new LuaRuntimeSyntax()
 syntax.Build()
 

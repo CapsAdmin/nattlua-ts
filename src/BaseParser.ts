@@ -9,7 +9,7 @@ export class ParserNode {
 	id: number = 0
 	Parent: ParserNode | undefined
 	standalone_letter?: ParserNode
-	type_expression?: ParserNode
+	type_expression: ParserNode | undefined
 
 	Tokens: {
 		["("]?: Token[]

@@ -1,6 +1,6 @@
 import { BaseParser, ParserNode } from "./BaseParser"
 import { Code } from "./Code"
-import { LuaLexer, syntax } from "./LuaLexer"
+import { LuaLexer, syntax, syntax_typesystem } from "./LuaLexer"
 import { Token } from "./Token"
 
 type FunctionNode =
@@ -26,7 +26,7 @@ export type SubExpressionNode =
 	| PostfixIndexExpression
 	| FunctionArgumentExpression
 	| FunctionReturnTypeExpression
-	
+
 export type ExpressionNode =
 	| ValueExpression
 	| FunctionExpression
@@ -37,6 +37,10 @@ export type ExpressionNode =
 	| TableSpreadExpression // sub
 	| TableExpressionNodes // sub
 	| SubExpressionNode // sub
+	| FunctionSignatureExpression // typesystem
+	| EmptyUnionExpression // typesystem
+	| TypeStringExpression // typesystem
+	| TypeVarargExpression // typesystem
 
 export type StatementNode =
 	| ReturnStatement
@@ -65,6 +69,35 @@ export type StatementNode =
 
 export type AnyParserNode = ExpressionNode | StatementNode
 
+export interface EmptyUnionExpression extends ParserNode {
+	Type: "expression"
+	Kind: "empty_union"
+
+	Tokens: ParserNode["Tokens"] & {
+		["|"]: Token
+	}
+}
+
+export interface TypeVarargExpression extends ParserNode {
+	Type: "expression"
+	Kind: "type_vararg"
+	expression: ExpressionNode
+
+	Tokens: ParserNode["Tokens"] & {
+		["..."]: Token
+	}
+}
+export interface TypeStringExpression extends ParserNode {
+	Type: "expression"
+	Kind: "type_string"
+
+	value: Token
+
+	Tokens: ParserNode["Tokens"] & {
+		["$"]: Token
+	}
+}
+
 export interface ValueExpression extends ParserNode {
 	Type: "expression"
 	Kind: "value"
@@ -81,7 +114,6 @@ export interface FunctionArgumentExpression extends ParserNode {
 		[":"]?: Token
 	}
 }
-
 
 export interface FunctionReturnTypeExpression extends ParserNode {
 	Type: "expression"
@@ -527,6 +559,27 @@ export interface CallExpressionStatement extends ParserNode {
 	expression: ExpressionNode
 }
 
+export interface FunctionSignatureExpression extends ParserNode {
+	Type: "expression"
+	Kind: "function_signature"
+
+	stmnt: boolean // ???
+	identifiers: FunctionArgumentExpression[]
+	return_types: FunctionReturnTypeExpression[]
+
+	Tokens: ParserNode["Tokens"] & {
+		["function"]: Token
+		["="]: Token
+		["arguments)"]: Token
+		["arguments,"]: Token[]
+		["arguments("]: Token
+		[">"]: Token
+		["return("]: Token
+		["return,"]: Token[]
+		["return)"]: Token
+	}
+}
+
 export class LuaParser extends BaseParser<AnyParserNode> {
 	ReadAnalyzerDebugCodeStatement() {
 		if (!this.IsType("analyzer_debug_code")) return undefined
@@ -719,54 +772,61 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 		node.right = this.ExpectExpression(Infinity)!
 		return this.EndNode(node)
 	}
+	ReadPrefixOperatorExpressionTypesystem() {
+		if (!syntax_typesystem.IsPrefixOperator(this.GetToken()!)) return
 
-    IsArgumentIdentifier() {
-        return this.IsType("letter") || this.IsValue("...")
-    }
-    
-    ExpectArgumentIdentifier() {
-        if (this.IsType("letter")) {
-            return this.ExpectType("letter")
-        }
-
-        return this.ExpectValue("...")
-    }
-
-	private ReadTypeFunctionArgument() {
-        let node = this.StartNode("expression", "function_argument")
-
-        node.identifier = this.ExpectArgumentIdentifier()
-        node.Tokens[":"] = this.ExpectValue(":")
-
-        node.type_expression = this.ExpectTypeExpression()
-        
-        return this.EndNode(node)
+		let node = this.StartNode("expression", "prefix_operator")
+		node.operator = this.ReadToken()!
+		node.right = this.ExpectTypeExpression(Infinity)!
+		return this.EndNode(node)
 	}
 
+	IsArgumentIdentifier() {
+		return this.IsType("letter") || this.IsValue("...")
+	}
+
+	ExpectArgumentIdentifier() {
+		if (this.IsType("letter")) {
+			return this.ExpectType("letter")
+		}
+
+		return this.ExpectValue("...")
+	}
+
+	private ReadTypeFunctionArgument() {
+		let node = this.StartNode("expression", "function_argument")
+
+		node.identifier = this.ExpectArgumentIdentifier()
+		node.Tokens[":"] = this.ExpectValue(":")
+
+		node.type_expression = this.ExpectTypeExpression()!
+
+		return this.EndNode(node)
+	}
 
 	private ReadFunctionArgument() {
-        let node = this.StartNode("expression", "function_argument")
-        node.identifier = this.ExpectArgumentIdentifier()
-        
+		let node = this.StartNode("expression", "function_argument")
+		node.identifier = this.ExpectArgumentIdentifier()
+
 		if (this.IsValue(":")) {
 			node.Tokens[":"] = this.ExpectValue(":")
-            node.type_expression = this.ExpectTypeExpression()
+			node.type_expression = this.ExpectTypeExpression()!
 		}
-        
-        return this.EndNode(node)
+
+		return this.EndNode(node)
 	}
 
 	private ReadFunctionReturnTypeExpression() {
-        let node = this.StartNode("expression", "function_return_type")
+		let node = this.StartNode("expression", "function_return_type")
 
 		if (this.IsType("letter") && this.IsValue(":", 1)) {
 			node.identifier = this.ExpectArgumentIdentifier()
 			node.Tokens[":"] = this.ExpectValue(":")
 		}
 
-        node.type_expression = this.ExpectTypeExpression()
-        
-        return this.EndNode(node)
+		node.type_expression = this.ExpectTypeExpression()!
+
+		return this.EndNode(node)
 	}
 	ReadAnalyzerFunctionBody(node: FunctionNode) {
 		node.Tokens["arguments,"] = []
@@ -830,32 +890,30 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 
 	ReadIndexExpression() {
 		let node = this.StartNode("expression", "value") as BinaryOperatorExpression | ValueExpression
-        if (node.Kind == "value") {
-            node.value = this.ExpectType("letter")
-        }
+		if (node.Kind == "value") {
+			node.value = this.ExpectType("letter")
+		}
 		this.EndNode(node)
 
 		let first = node
-			
+
 		while (this.IsValue(".") || this.IsValue(":")) {
-			
 			let left = node
 			let self_call = this.IsValue(":")
-			
+
 			let dotbinary = this.StartNode("expression", "binary_operator")
 			dotbinary.operator = this.ReadToken()!
 
 			let value = this.StartNode("expression", "value")
 			value.value = this.ExpectType("letter")
 			value.self_call = self_call // TODO
-            this.EndNode(value)
+			this.EndNode(value)
 
-            dotbinary.right = value
+			dotbinary.right = value
 			this.EndNode(node)
 
 			dotbinary.left = left
-            node = dotbinary
-		
+			node = dotbinary
 		}
 
 		first.standalone_letter = node
@@ -968,6 +1026,22 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 		if (!syntax.IsTokenValue(this.GetToken()!)) return
 		let node = this.StartNode("expression", "value")
 		node.value = this.ReadToken()!
+		return this.EndNode(node)
+	}
+
+	ReadTypesystemValueExpression() {
+		if (!syntax_typesystem.IsTokenValue(this.GetToken()!)) return
+		let node = this.StartNode("expression", "value")
+		node.value = this.ReadToken()!
+		return this.EndNode(node)
+	}
+
+	ReadVarargValueExpression() {
+		if (!(this.IsValue("...") && this.IsType("letter", 1))) return
+		let node = this.StartNode("expression", "type_vararg")
+		node.Tokens["..."] = this.ExpectValue("...")
+		node.expression = this.ExpectTypeExpression()!
+
 		return this.EndNode(node)
 	}
 
@@ -1199,31 +1273,181 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 		return this.EndNode(node)
 	}
 
-	ReadTypeExpression(priority: number = 0): ExpressionNode | undefined {
-		return undefined
+	private ReadEmptyUnion() {
+		if (!this.IsValue("|")) return undefined
+
+		let node = this.StartNode("expression", "empty_union")
+		node.Tokens["|"] = this.ExpectValue("|")
+
+		return this.EndNode(node)
 	}
 
-	ExpectTypeExpression(priority: number = 0): ExpressionNode {
+	private ReadTypeString() {
+		if (!(this.IsType("$") && this.IsType("string", 1))) return
 
-        // TODO: these are just mocks
+		let node = this.StartNode("expression", "type_string")
+		node.Tokens["$"] = this.ExpectValue("$")
+		node.value = this.ExpectValue("string")
+		return this.EndNode(node)
+	}
 
-        if (this.IsValue("any")) {
-            let node = this.StartNode("expression", "value")
-            node.value = this.ExpectType("letter")
-            return this.EndNode(node)
-        }
+	private ReadFunctionSignature() {
+		if (!(this.IsValue("function") && this.IsValue("=", 1))) return
 
-        if (this.IsValue("...")) {
-            let tk = this.ReadToken()!
-            let node = this.StartNode("expression", "value")
-            node.value = this.ExpectType("letter")
-            node.value.value = " " + tk.value + node.value.value
-            return this.EndNode(node)
-        }
+		let node = this.StartNode("expression", "function_signature")
 
-        // TODO: ^
+		node.stmnt = false
+		node.Tokens["function"] = this.ExpectValue("function")
+		node.Tokens["="] = this.ExpectValue("=")
 
-		return {} as ExpressionNode
+		node.Tokens["arguments("] = this.ExpectValue("(")
+		node.Tokens["arguments,"] = []
+		node.identifiers = this.ReadMultipleValues(
+			undefined,
+			() => this.ReadTypeFunctionArgument(),
+			node.Tokens["arguments,"],
+		)
+		node.Tokens["arguments)"] = this.ExpectValue(")")
+
+		node.Tokens[">"] = this.ExpectValue(">")
+
+		node.Tokens["return("] = this.ExpectValue("(")
+		node.Tokens["return,"] = []
+		node.return_types = this.ReadMultipleValues(
+			undefined,
+			() => this.ReadFunctionReturnTypeExpression(),
+			node.Tokens["return,"],
+		)
+		node.Tokens["return)"] = this.ExpectValue(")")
+
+		return this.EndNode(node)
+	}
+
+	private ReadPrimaryExpressionTypesystem() {
+		return (
+			this.ReadParenthesisExpression() ||
+			this.ReadEmptyUnion() ||
+			this.ReadPrefixOperatorExpressionTypesystem() ||
+			this.ReadAnalyzerFunctionExpression() ||
+			this.ReadFunctionSignature() ||
+			this.ReadFunctionExpression() ||
+			this.ReadImportExpression() ||
+			this.ReadVarargValueExpression() ||
+			this.ReadTypesystemValueExpression() ||
+			this.ReadTableExpression()
+		)
+	}
+
+	private ReadSubExpressionTypesystem(primary: PrimaryExpressionNode) {
+		let node: PrimaryExpressionNode | SubExpressionNode = primary
+		for (let i = 0; i < this.GetLength(); i++) {
+			let primary = node
+
+			if (this.IsValue(":") && (!this.IsType("letter", 1) || !this.IsCallExpression(2))) {
+				primary.Tokens[":"] = this.ExpectValue(":")
+				primary.type_expression = this.ExpectTypeExpression(0)
+			} else if (this.IsValue("as")) {
+				primary.Tokens["as"] = this.ExpectValue("as")
+				primary.type_expression = this.ExpectTypeExpression(0)
+			} else if (this.IsValue("is")) {
+				primary.Tokens["is"] = this.ExpectValue("is")
+				primary.type_expression = this.ExpectTypeExpression(0)
+			}
+
+			let sub =
+				this.ReadIndexSubExpression() ||
+				this.ReadSelfCallSubExpression() ||
+				this.ReadCallSubExpression() ||
+				this.ReadPostfixOperatorSubExpression() ||
+				this.ReadPostfixIndexSubExpression()
+
+			if (!sub) break
+			sub.left = primary
+
+			node = sub
+		}
+
+		return node
+	}
+
+	ReadTypeExpression(priority: number = 0): ExpressionNode | undefined {
+		// read primary expression
+		let node
+
+		let primary = this.ReadPrimaryExpressionTypesystem()
+
+		node = primary
+
+		if (primary) {
+			let sub = this.ReadSubExpressionTypesystem(primary)
+
+			if (sub) {
+				if (primary.Kind == "value" && (primary.value.type == "letter" || primary.value.value == "...")) {
+					primary.standalone_letter = sub
+				}
+			}
+
+			node = sub
+		}
+
+		while (node) {
+			let info = syntax_typesystem.GetBinaryOperatorInfo(this.GetToken()!)
+			if (!info || info.left_priority < priority) break
+
+			let left_node = node
+			node = this.StartNode("expression", "binary_operator")
+			node.operator = this.ReadToken()!
+			node.left = left_node
+
+			if (node.left) {
+				node.left.Parent = node
+			}
+
+			node.right = this.ExpectTypeExpression(
+				syntax_typesystem.GetBinaryOperatorInfo(node.operator)!.right_priority,
+			)!
+
+			if (!node.right) {
+				let token = this.GetToken()
+				this.Error(
+					"expected right side to be an expression, got $1",
+					undefined,
+					undefined,
+					token && ((token.value != "" && token.value) || token.type),
+				)
+				return
+			}
+
+			this.EndNode(node)
+		}
+
+		return node
+	}
+
+	ExpectTypeExpression(priority: number = 0) {
+		let token = this.GetToken()
+
+		if (
+			!token ||
+			token.type == "end_of_file" ||
+			token.value == "}" ||
+			token.value == "," ||
+			token.value == "]" ||
+			(syntax_typesystem.IsKeyword(token) &&
+				!syntax_typesystem.IsPrefixOperator(token) &&
+				!syntax_typesystem.IsTokenValue(token) &&
+				token.value != "function")
+		) {
+			this.Error(
+				"expected beginning of expression, got $1",
+				undefined,
+				undefined,
+				token && ((token.value != "" && token.value) || token.type),
+			)
+			return
+		}
+
+		return this.ReadTypeExpression(priority)
 	}
 
 	ReadBreakStatement() {
