@@ -55,8 +55,20 @@ test("idiv", () => {
 
 test("function", () => {
 	check("function foo(lol) return 1+1 end")
+	check("function foo(lol, ...) end")
+	check("function foo.bar(lol, ...) end")
+	check("function foo.bar:Faz(lol, ...) end")
 	check("local function foo(lol, ...) return 1+1 end")
 	check("local x = function(lol, ...) return 1+1 end")
+})
+
+test("analyzer function", () => {
+	check("analyzer function foo(lol: any, lol2: any) return 1+1 end")
+	check("analyzer function foo(lol: any, ...: ...any) end")
+	check("analyzer function foo.bar(lol: any, ...: ...any) end")
+	check("analyzer function foo.bar:Faz(lol: any, ...: ...any) end")
+	check("local analyzer function foo(lol: any, ...: ...any) return 1+1 end")
+	check("local x = analyzer function(lol: any, ...: ...any) return 1+1 end")
 })
 
 test("if", () => {
