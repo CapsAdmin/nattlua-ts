@@ -6,6 +6,8 @@ import { TokenType } from "./Token"
 const B = (str: string) => str.charCodeAt(0)
 
 export const syntax_typesystem = new LuaTypesystemSyntax()
+syntax_typesystem.Build()
+
 export const syntax = new LuaRuntimeSyntax()
 syntax.Build()
 
@@ -363,6 +365,7 @@ export class LuaLexer extends BaseLexer {
 
 	ReadSymbol(): TokenType | false {
 		if (this.ReadFromArray(syntax.GetSymbols())) return "symbol"
+		if (this.ReadFromArray(syntax_typesystem.GetSymbols())) return "symbol"
 		return false
 	}
 

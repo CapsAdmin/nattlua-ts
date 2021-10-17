@@ -27,6 +27,8 @@ import {
 	FunctionReturnTypeSubExpression,
 	FunctionSignatureTypeExpression,
 	FunctionStatement,
+	FunctionTypeExpression,
+	FunctionTypeStatement,
 	GotoLabelStatement,
 	GotoStatement,
 	IfStatement,
@@ -39,7 +41,6 @@ import {
 	ReturnStatement,
 	SemicolonStatement,
 	StatementNode,
-	StringTypeExpression,
 	TableExpression,
 	TableExpressionKeyValueSubExpression,
 	TableIndexValueSubExpression,
@@ -54,7 +55,12 @@ export class LuaEmitter extends BaseEmitter {
 	EmitStatement(node: StatementNode) {
 		if (node.Kind == "return") {
 			this.EmitReturnStatement(node)
-		} else if (node.Kind == "function" || node.Kind == "local_function" || node.Kind == "local_type_function") {
+		} else if (
+			node.Kind == "function" ||
+			node.Kind == "local_function" ||
+			node.Kind == "local_type_function" ||
+			node.Kind == "type_function"
+		) {
 			this.EmitFunction(node)
 		} else if (node.Kind == "if") {
 			this.EmitIf(node)
@@ -91,7 +97,7 @@ export class LuaEmitter extends BaseEmitter {
 		} else if (node.Kind == "repeat") {
 			this.EmitRepeat(node)
 		} else if (node.Kind == "analyzer_function" || node.Kind == "local_analyzer_function") {
-			this.EmitAnalyzerFunction(node)
+			this.EmitFunction(node)
 		} else if (node.Kind == "type_assignment") {
 			this.EmitTypeAssignment(node)
 		} else {
@@ -109,6 +115,13 @@ export class LuaEmitter extends BaseEmitter {
 
 		if (node.Kind == "value") {
 			this.EmitToken(node.value)
+
+			if (node.Tokens[":"]) {
+				this.EmitToken(node.Tokens[":"])
+				if (node.type_expression) {
+					this.EmitExpression(node.type_expression as AnyExpressionNode)
+				}
+			}
 		} else if (node.Kind == "binary_operator") {
 			this.EmitBinaryOperator(node)
 		} else if (node.Kind == "prefix_operator") {
@@ -121,10 +134,8 @@ export class LuaEmitter extends BaseEmitter {
 			this.EmitCallExpression(node)
 		} else if (node.Kind == "postfix_expression_index") {
 			this.EmitPostfixExpressionIndex(node)
-		} else if (node.Kind == "function") {
+		} else if (node.Kind == "function" || node.Kind == "analyzer_function" || node.Kind == "type_function") {
 			this.EmitFunction(node)
-		} else if (node.Kind == "analyzer_function") {
-			this.EmitAnalyzerFunction(node)
 		} else if (node.Kind == "function_argument") {
 			this.EmitFunctionArgument(node)
 		} else if (node.Kind == "function_return_type") {
@@ -133,12 +144,10 @@ export class LuaEmitter extends BaseEmitter {
 			this.EmitTypeVararg(node)
 		} else if (node.Kind == "function_signature") {
 			this.EmitFunctionSignature(node)
-		} else if (node.Kind == "type_string") {
-			this.EmitTypeString(node)
 		} else if (node.Kind == "empty_union") {
 			this.EmitUnion(node)
 		} else if (node.Kind == "table_spread") {
-			this.EmitTableSpread(node)
+			// this is handled by EmitTable
 		} else if (node.Kind == "table_expression_value") {
 			this.EmitTableExpressionValue(node)
 		} else if (node.Kind == "table_key_value") {
@@ -150,6 +159,13 @@ export class LuaEmitter extends BaseEmitter {
 		} else {
 			const _shouldNeverHappen: never = node
 			throw new Error("Unknown expression kind: " + (node as any).Kind)
+		}
+
+		if (node.Tokens["as"]) {
+			this.EmitToken(node.Tokens["as"])
+			if (node.type_expression) {
+				this.EmitExpression(node.type_expression as AnyExpressionNode)
+			}
 		}
 
 		if (node.Tokens[")"]) {
@@ -169,11 +185,6 @@ export class LuaEmitter extends BaseEmitter {
 		}
 	}
 
-	EmitTableSpread(node: TableSpreadSubExpression) {
-		this.EmitToken(node.Tokens["..."])
-		this.EmitExpression(node.expression)
-	}
-
 	EmitUnion(node: EmptyUnionTypeExpression) {
 		if (node.Kind == "empty_union") {
 			this.EmitToken(node.Tokens["|"])
@@ -182,13 +193,11 @@ export class LuaEmitter extends BaseEmitter {
 		}
 	}
 
-	EmitTypeString(node: StringTypeExpression) {
-		this.EmitToken(node.Tokens["$"])
-		this.EmitToken(node.value)
-	}
-
 	EmitTypeAssignment(node: AssignmentTypeStatement) {
 		this.EmitToken(node.Tokens["type"])
+		if (node.Tokens["^"]) {
+			this.EmitToken(node.Tokens["^"])
+		}
 		this.EmitExpressionList(node.left, node.Tokens["left,"])
 		this.EmitToken(node.Tokens["="])
 		this.EmitExpressionList(node.right, node.Tokens["right,"])
@@ -391,22 +400,51 @@ export class LuaEmitter extends BaseEmitter {
 	}
 
 	EmitFunctionReturnType(node: FunctionReturnTypeSubExpression) {
+		if (node.identifier) {
+			this.EmitToken(node.identifier)
+			if (node.Tokens[":"]) {
+				this.EmitToken(node.Tokens[":"])
+			}
+		}
 		this.EmitExpression(node.type_expression)
 	}
 
-	EmitFunction(node: FunctionStatement | FunctionLocalStatement | FunctionExpression | FunctionLocalTypeStatement) {
-		if (node.Kind == "local_function" || node.Kind == "local_type_function") {
+	EmitFunction(
+		node:
+			| FunctionStatement
+			| FunctionLocalStatement
+			| FunctionExpression
+			| FunctionLocalTypeStatement
+			| FunctionTypeStatement
+			| FunctionTypeExpression
+			| FunctionAnalyzerExpression
+			| FunctionAnalyzerStatement
+			| FunctionLocalAnalyzerStatement,
+	) {
+		if (
+			node.Kind == "local_function" ||
+			node.Kind == "local_type_function" ||
+			node.Kind == "local_analyzer_function"
+		) {
 			this.EmitToken(node.Tokens["local"])
 		}
 
-		if (node.Kind == "local_type_function") {
+		if (node.Kind == "local_type_function" || node.Kind == "type_function") {
 			this.EmitToken(node.Tokens["type"])
 		}
 
+		if (node.Kind == "local_analyzer_function" || node.Kind == "analyzer_function") {
+			this.EmitToken(node.Tokens["analyzer"])
+		}
+
 		this.EmitToken(node.Tokens["function"])
 
 		if (node.Type == "statement") {
-			if (node.Kind == "local_function" || node.Kind == "local_type_function") {
+			if (
+				node.Kind == "local_function" ||
+				node.Kind == "local_type_function" ||
+				node.Kind == "local_analyzer_function"
+			) {
 				this.EmitToken(node.label)
 			} else {
 				this.EmitExpression(node.index_expression)
@@ -416,31 +454,12 @@ export class LuaEmitter extends BaseEmitter {
 		this.EmitToken(node.Tokens["arguments("])
 		this.EmitExpressionList(node.arguments, node.Tokens["arguments,"])
 		this.EmitToken(node.Tokens["arguments)"])
-		this.EmitStatements(node.statements)
-		this.EmitToken(node.Tokens["end"])
-	}
 
-	EmitAnalyzerFunction(
-		node: FunctionLocalAnalyzerStatement | FunctionAnalyzerStatement | FunctionAnalyzerExpression,
-	) {
-		if (node.Kind == "local_analyzer_function") {
-			this.EmitToken(node.Tokens["local"])
+		if (node.Tokens[":"]) {
+			this.EmitToken(node.Tokens[":"])
+			this.EmitExpressionList(node.return_types, node.Tokens["return_types,"])
 		}
 
-		this.EmitToken(node.Tokens["analyzer"])
-		this.EmitToken(node.Tokens["function"])
-
-		if (node.Type == "statement") {
-			if (node.Kind == "local_analyzer_function") {
-				this.EmitToken(node.label)
-			} else {
-				this.EmitExpression(node.index_expression)
-			}
-		}
-
-		this.EmitToken(node.Tokens["arguments("])
-		this.EmitExpressionList(node.arguments, node.Tokens["arguments,"])
-		this.EmitToken(node.Tokens["arguments)"])
 		this.EmitStatements(node.statements)
 		this.EmitToken(node.Tokens["end"])
 	}
@@ -538,7 +557,7 @@ export class LuaEmitter extends BaseEmitter {
 
 					this.EmitExpression(node)
 				} else if (node.Kind == "table_key_value") {
-					if (node.spread && !during_spread) {
+					if (tree.spread && !during_spread) {
 						during_spread = true
 						this.EmitNonSpace("{")
 					}

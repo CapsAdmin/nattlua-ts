@@ -46,7 +46,10 @@ test("table", () => {
 	check("return {key = val}")
 	check("return {1,2}")
 	check("return {1,2,}")
+	check("return {...{}}", "return table.mergetables {{}}")
+	check("return {...({})}", "return table.mergetables {({})}")
 	check("return {a, ...foo}", "return table.mergetables {a,foo}")
+	check("return {a, foo=true, ...foo, lol=false}", "return table.mergetables {a,{ foo=true,},foo,{ lol=false}}")
 })
 
 test("idiv", () => {
@@ -56,19 +59,35 @@ test("idiv", () => {
 test("function", () => {
 	check("function foo(lol) return 1+1 end")
 	check("function foo(lol, ...) end")
+	check("function foo() end")
+	check("function foo(): foo: bar end")
 	check("function foo.bar(lol, ...) end")
 	check("function foo.bar:Faz(lol, ...) end")
+	check("function foo.bar:Faz(lol, ...): boolean end")
+	check("function foo.bar:Faz(lol, ...): boolean, foo end")
 	check("local function foo(lol, ...) return 1+1 end")
 	check("local x = function(lol, ...) return 1+1 end")
 })
 
 test("analyzer function", () => {
+	check("analyzer function foo() return 1+1 end")
 	check("analyzer function foo(lol: any, lol2: any) return 1+1 end")
+	check("analyzer function foo(lol: any, ...: ...any): boolean end")
+	check("analyzer function foo(lol: any, ...: ...any): boolean, foo end")
 	check("analyzer function foo(lol: any, ...: ...any) end")
 	check("analyzer function foo.bar(lol: any, ...: ...any) end")
 	check("analyzer function foo.bar:Faz(lol: any, ...: ...any) end")
 	check("local analyzer function foo(lol: any, ...: ...any) return 1+1 end")
 	check("local x = analyzer function(lol: any, ...: ...any) return 1+1 end")
+})
+
+test("type function", () => {
+	check("type function foo(lol: any, lol2: any) return 1+1 end")
+	check("type function foo(lol: any, ...: ...any) end")
+	check("type function foo.bar(lol: any, ...: ...any) end")
+	check("type function foo.bar:Faz(lol: any, ...: ...any) end")
+	check("local type function foo(lol: any, ...: ...any) return 1+1 end")
+	check("local x = type function(lol: any, ...: ...any) return 1+1 end")
 })
 
 test("if", () => {
@@ -104,6 +123,11 @@ test("assignment", () => {
 	check("foo.bar, foo.faz = 1, 2")
 
 	check("local {a,b,c} = {1,2,3}", 'local a,b,c =table.destructure( {1,2,3}, {"a", "b", "c"})')
+	check(
+		"local default, {a,b,c} = {1,2,3}",
+		'local  default,a,b,c =table.destructure( {1,2,3}, {"a", "b", "c"}, true)',
+	)
+	check("default, {a,b,c} = {1,2,3}", ' default,a,b,c =table.destructure( {1,2,3}, {"a", "b", "c"}, true)')
 	check("{a,b,c} = {1,2,3}", 'a,b,c =table.destructure( {1,2,3}, {"a", "b", "c"})')
 })
 
@@ -128,12 +152,28 @@ test("repeat", () => {
 })
 
 test("type assignment", () => {
-    check("type a = 1")
-    check("type a,b = 1,2")
+	check("type a = 1")
+	check("type a,b = 1,2")
+	check("local type a = 1")
+	check("local type a,b = 1,2")
+	check("local a = x as boolean")
+	check("local a: boolean = x")
+
+	check("type a = x as boolean")
+	check("type a: boolean = x")
+	check("type ^string = foo")
 })
 
 test("function signature", () => {
-    check("type a = function=()>()")
-    check("type a = function=(a: number, b, c)>(boolean)")
-    check("type a = function=(a: number, b, c)>(boolean, number)")
+	check("type a = function=()>()")
+	check("type a = function=(a: number, b, c)>(boolean)")
+	check("type a = function=(a: number, b, c)>(boolean, number)")
+})
+
+test("type string", () => {
+	check("local type a = $'lol'")
+})
+
+test("union", () => {
+	check("local type a = |")
 })
