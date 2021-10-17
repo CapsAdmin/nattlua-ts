@@ -1,31 +1,36 @@
 import { BaseEmitter } from "./BaseEmitter"
 import {
-	DebugAnalyzerCodeStatement,
-	FunctionAnalyzerExpression,
-	FunctionAnalyzerStatement,
+	AnyExpressionNode,
+	AssignmentDestructureStatement,
+	AssignmentLocalDestructureStatement,
+	AssignmentLocalStatement,
+	AssignmentLocalTypeStatement,
 	AssignmentStatement,
-	BinaryOperatorSubExpression,
+	AssignmentTypeStatement,
+	BinaryOperatorExpression,
 	BreakStatement,
 	CallExpressionStatement,
 	ContinueStatement,
-	AssignmentDestructureStatement,
+	DebugAnalyzerCodeStatement,
+	DebugParserCodeStatement,
 	DoStatement,
-	ExpressionNode,
+	EmptyUnionTypeExpression,
+	ForGenericStatement,
+	ForNumericStatement,
+	FunctionAnalyzerExpression,
+	FunctionAnalyzerStatement,
 	FunctionArgumentSubExpression,
 	FunctionExpression,
+	FunctionLocalAnalyzerStatement,
+	FunctionLocalStatement,
+	FunctionLocalTypeStatement,
 	FunctionReturnTypeSubExpression,
 	FunctionSignatureTypeExpression,
 	FunctionStatement,
-	ForGenericStatement,
 	GotoLabelStatement,
 	GotoStatement,
 	IfStatement,
-	FunctionLocalAnalyzerStatement,
-	AssignmentLocalStatement,
-	AssignmentLocalDestructureStatement,
-	FunctionLocalStatement,
-	ForNumericStatement,
-	DebugParserCodeStatement,
+	ImportExpression,
 	PostfixCallSubExpression,
 	PostfixIndexSubExpression,
 	PostfixOperatorSubExpression,
@@ -34,15 +39,14 @@ import {
 	ReturnStatement,
 	SemicolonStatement,
 	StatementNode,
+	StringTypeExpression,
 	TableExpression,
-	AssignmentTypeStatement,
+	TableExpressionKeyValueSubExpression,
+	TableIndexValueSubExpression,
+	TableKeyValueSubExpression,
+	TableSpreadSubExpression,
 	VarargTypeExpression,
 	WhileStatement,
-	FunctionLocalTypeStatement,
-	AssignmentLocalTypeStatement,
-	StringTypeExpression,
-	EmptyUnionTypeExpression,
-	TableSpreadSubExpression,
 } from "./LuaParser"
 import { Token } from "./Token"
 
@@ -91,11 +95,12 @@ export class LuaEmitter extends BaseEmitter {
 		} else if (node.Kind == "type_assignment") {
 			this.EmitTypeAssignment(node)
 		} else {
-			throw new Error("Unknown statement kind: " + node.Kind)
+			const _shouldNeverHappen: never = node
+			throw new Error("Unknown statement kind: " + (node as any).Kind)
 		}
 	}
 
-	EmitExpression(node: ExpressionNode) {
+	EmitExpression(node: AnyExpressionNode) {
 		if (node.Tokens["("]) {
 			for (let token of node.Tokens["("]) {
 				this.EmitToken(token)
@@ -134,14 +139,33 @@ export class LuaEmitter extends BaseEmitter {
 			this.EmitUnion(node)
 		} else if (node.Kind == "table_spread") {
 			this.EmitTableSpread(node)
+		} else if (node.Kind == "table_expression_value") {
+			this.EmitTableExpressionValue(node)
+		} else if (node.Kind == "table_key_value") {
+			this.EmitTableKeyValue(node)
+		} else if (node.Kind == "table_index_value") {
+			this.EmitTableIndexValue(node)
+		} else if (node.Kind == "import") {
+			this.EmitImport(node)
 		} else {
-			throw new Error("Unknown expression kind: " + node.Kind)
+			const _shouldNeverHappen: never = node
+			throw new Error("Unknown expression kind: " + (node as any).Kind)
 		}
 
 		if (node.Tokens[")"]) {
 			for (let token of node.Tokens[")"]) {
 				this.EmitToken(token)
 			}
+		}
+	}
+
+	EmitImport(node: ImportExpression) {}
+
+	EmitTableIndexValue(node: TableIndexValueSubExpression) {
+		if (node.spread) {
+			this.EmitExpression(node.spread.expression)
+		} else {
+			this.EmitExpression(node.value_expression)
 		}
 	}
 
@@ -455,7 +479,7 @@ export class LuaEmitter extends BaseEmitter {
 		}
 	}
 
-	EmitExpressionList(nodes: ExpressionNode[], separator: Token[]) {
+	EmitExpressionList(nodes: AnyExpressionNode[], separator: Token[]) {
 		let i = 0
 		for (let node of nodes) {
 			this.EmitExpression(node)
@@ -466,7 +490,7 @@ export class LuaEmitter extends BaseEmitter {
 		}
 	}
 
-	EmitBinaryOperator(node: BinaryOperatorSubExpression) {
+	EmitBinaryOperator(node: BinaryOperatorExpression) {
 		this.EmitExpression(node.left)
 		this.EmitToken(node.operator)
 		this.EmitExpression(node.right)
@@ -479,6 +503,19 @@ export class LuaEmitter extends BaseEmitter {
 	EmitPostfixOperator(node: PostfixOperatorSubExpression) {
 		this.EmitExpression(node.left)
 		this.EmitToken(node.operator)
+	}
+
+	EmitTableExpressionValue(node: TableExpressionKeyValueSubExpression) {
+		this.EmitToken(node.Tokens["["])
+		this.EmitExpression(node.key_expression)
+		this.EmitToken(node.Tokens["]"])
+		this.EmitToken(node.Tokens["="])
+		this.EmitExpression(node.value_expression)
+	}
+	EmitTableKeyValue(node: TableKeyValueSubExpression) {
+		this.EmitToken(node.identifier)
+		this.EmitToken(node.Tokens["="])
+		this.EmitExpression(node.value_expression)
 	}
 	EmitTable(tree: TableExpression) {
 		if (tree.spread) {
@@ -497,26 +534,18 @@ export class LuaEmitter extends BaseEmitter {
 							this.EmitNonSpace("},")
 							during_spread = false
 						}
-
-						this.EmitExpression(node.spread.expression)
-					} else {
-						this.EmitExpression(node.value_expression)
 					}
+
+					this.EmitExpression(node)
 				} else if (node.Kind == "table_key_value") {
 					if (node.spread && !during_spread) {
 						during_spread = true
 						this.EmitNonSpace("{")
 					}
 
-					this.EmitToken(node.identifier)
-					this.EmitToken(node.Tokens["="])
-					this.EmitExpression(node.value_expression)
+					this.EmitExpression(node)
 				} else if (node.Kind == "table_expression_value") {
-					this.EmitToken(node.Tokens["["])
-					this.EmitExpression(node.key_expression)
-					this.EmitToken(node.Tokens["]"])
-					this.EmitToken(node.Tokens["="])
-					this.EmitExpression(node.value_expression)
+					this.EmitExpression(node)
 				}
 
 				if (tree.Tokens.separators[i]) {

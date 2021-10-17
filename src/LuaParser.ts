@@ -16,7 +16,9 @@ type TableSubExpression =
 	| TableExpressionKeyValueSubExpression
 	| TableKeyValueSubExpression
 	| TableIndexValueSubExpression
-type PrimaryExpressionNode =
+
+export type PrimaryExpressionNode =
+	| BinaryOperatorExpression
 	| ValueExpression
 	| FunctionExpression
 	| ImportExpression
@@ -28,8 +30,10 @@ type PrimaryExpressionNode =
 	| StringTypeExpression
 	| VarargTypeExpression
 
-type SubExpressionNode =
-	| BinaryOperatorSubExpression
+	// this is needed for ReadCallOrAssignmentStatement
+	| PostfixCallSubExpression
+
+export type SubExpressionNode =
 	| PostfixCallSubExpression
 	| PostfixOperatorSubExpression
 	| PostfixIndexSubExpression
@@ -37,8 +41,6 @@ type SubExpressionNode =
 	| FunctionReturnTypeSubExpression
 	| TableSpreadSubExpression
 	| TableSubExpression
-
-export type ExpressionNode = PrimaryExpressionNode | SubExpressionNode
 
 export type StatementNode =
 	| ReturnStatement
@@ -64,7 +66,8 @@ export type StatementNode =
 	| AssignmentLocalTypeStatement
 	| CallExpressionStatement
 
-export type AnyParserNode = ExpressionNode | StatementNode
+export type AnyExpressionNode = PrimaryExpressionNode | SubExpressionNode
+export type AnyParserNode = AnyExpressionNode | StatementNode
 
 export interface EmptyUnionTypeExpression extends ParserNode {
 	Type: "expression"
@@ -78,7 +81,7 @@ export interface EmptyUnionTypeExpression extends ParserNode {
 export interface VarargTypeExpression extends ParserNode {
 	Type: "expression"
 	Kind: "type_vararg"
-	expression: ExpressionNode
+	expression: PrimaryExpressionNode
 
 	Tokens: ParserNode["Tokens"] & {
 		["..."]: Token
@@ -108,7 +111,7 @@ export interface FunctionArgumentSubExpression extends ParserNode {
 	Type: "expression"
 	Kind: "function_argument"
 	identifier?: Token
-	type_expression: ExpressionNode
+	type_expression: PrimaryExpressionNode
 	Tokens: ParserNode["Tokens"] & {
 		[":"]?: Token
 	}
@@ -118,7 +121,7 @@ export interface FunctionReturnTypeSubExpression extends ParserNode {
 	Type: "expression"
 	Kind: "function_return_type"
 	identifier?: Token
-	type_expression: ExpressionNode
+	type_expression: PrimaryExpressionNode
 	Tokens: ParserNode["Tokens"] & {
 		[":"]?: Token
 	}
@@ -129,8 +132,8 @@ export interface TableExpressionKeyValueSubExpression extends ParserNode {
 	Type: "expression"
 	Kind: "table_expression_value"
 	expression_key: boolean
-	key_expression: ExpressionNode
-	value_expression: ExpressionNode
+	key_expression: PrimaryExpressionNode
+	value_expression: PrimaryExpressionNode
 	Tokens: ParserNode["Tokens"] & {
 		["="]: Token
 		["["]: Token
@@ -143,7 +146,7 @@ export interface TableKeyValueSubExpression extends ParserNode {
 	Type: "expression"
 	Kind: "table_key_value"
 	identifier: Token
-	value_expression: ExpressionNode
+	value_expression: PrimaryExpressionNode
 	spread?: TableSpreadSubExpression
 	Tokens: ParserNode["Tokens"] & {
 		["="]: Token
@@ -154,7 +157,7 @@ export interface TableKeyValueSubExpression extends ParserNode {
 export interface TableIndexValueSubExpression extends ParserNode {
 	Type: "expression"
 	Kind: "table_index_value"
-	value_expression: ExpressionNode
+	value_expression: PrimaryExpressionNode
 	spread?: TableSpreadSubExpression
 	key: number
 }
@@ -178,9 +181,9 @@ export interface TableExpression extends ParserNode {
 export interface PostfixCallSubExpression extends ParserNode {
 	Type: "expression"
 	Kind: "postfix_call"
-	arguments: ExpressionNode[]
+	arguments: PrimaryExpressionNode[]
 	is_type_call: boolean
-	left: ExpressionNode
+	left: PrimaryExpressionNode
 	Tokens: ParserNode["Tokens"] & {
 		["arguments("]?: Token
 		[","]: Token[]
@@ -193,7 +196,7 @@ export interface PostfixCallSubExpression extends ParserNode {
 export interface TableSpreadSubExpression extends ParserNode {
 	Type: "expression"
 	Kind: "table_spread"
-	expression: ExpressionNode
+	expression: PrimaryExpressionNode
 
 	Tokens: ParserNode["Tokens"] & {
 		["..."]: Token
@@ -203,8 +206,8 @@ export interface TableSpreadSubExpression extends ParserNode {
 export interface PostfixIndexSubExpression extends ParserNode {
 	Type: "expression"
 	Kind: "postfix_expression_index"
-	index: ExpressionNode
-	left: ExpressionNode
+	index: PrimaryExpressionNode
+	left: PrimaryExpressionNode
 
 	Tokens: ParserNode["Tokens"] & {
 		["["]: Token
@@ -233,7 +236,7 @@ export interface DebugAnalyzerCodeStatement extends ParserNode {
 export interface ReturnStatement extends ParserNode {
 	Type: "statement"
 	Kind: "return"
-	expressions: ExpressionNode[]
+	expressions: PrimaryExpressionNode[]
 	Tokens: ParserNode["Tokens"] & {
 		["return"]: Token
 		[","]: Token[]
@@ -286,7 +289,7 @@ export interface FunctionAnalyzerStatement extends ParserNode {
 	arguments: FunctionArgumentSubExpression[]
 	return_types: FunctionReturnTypeSubExpression[]
 	statements: StatementNode[]
-	index_expression: BinaryOperatorSubExpression | ValueExpression
+	index_expression: BinaryOperatorExpression | ValueExpression
 	Tokens: ParserNode["Tokens"] & {
 		["analyzer"]: Token
 		["function"]: Token
@@ -366,7 +369,7 @@ export interface FunctionLocalTypeStatement extends ParserNode {
 export interface FunctionStatement extends ParserNode {
 	Type: "statement"
 	Kind: "function"
-	index_expression: BinaryOperatorSubExpression | ValueExpression
+	index_expression: BinaryOperatorExpression | ValueExpression
 	arguments: FunctionArgumentSubExpression[]
 	return_types: FunctionReturnTypeSubExpression[]
 	statements: StatementNode[]
@@ -402,7 +405,7 @@ export interface ImportExpression extends ParserNode {
 	Type: "expression"
 	Kind: "import"
 	path: string
-	expressions: ExpressionNode[]
+	expressions: PrimaryExpressionNode[]
 	Tokens: ParserNode["Tokens"] & {
 		["import"]: Token
 		["arguments)"]: Token
@@ -412,33 +415,33 @@ export interface ImportExpression extends ParserNode {
 	}
 }
 
-export interface BinaryOperatorSubExpression extends ParserNode {
+export interface BinaryOperatorExpression extends ParserNode {
 	Type: "expression"
 	Kind: "binary_operator"
 	operator: Token
-	left: ExpressionNode
-	right: ExpressionNode
+	left: AnyExpressionNode
+	right: PrimaryExpressionNode
 }
 
 export interface PrefixOperatorExpression extends ParserNode {
 	Type: "expression"
 	Kind: "prefix_operator"
 	operator: Token
-	right: ExpressionNode
+	right: PrimaryExpressionNode
 }
 
 export interface PostfixOperatorSubExpression extends ParserNode {
 	Type: "expression"
 	Kind: "postfix_operator"
 	operator: Token
-	left: ExpressionNode
+	left: AnyExpressionNode
 }
 
 export interface RepeatStatement extends ParserNode {
 	Type: "statement"
 	Kind: "repeat"
 	statements: StatementNode[]
-	expression: ExpressionNode
+	expression: PrimaryExpressionNode
 	Tokens: ParserNode["Tokens"] & {
 		["repeat"]: Token
 		["until"]: Token
@@ -458,7 +461,7 @@ export interface DoStatement extends ParserNode {
 export interface IfStatement extends ParserNode {
 	Type: "statement"
 	Kind: "if"
-	expressions: ExpressionNode[]
+	expressions: PrimaryExpressionNode[]
 	statements: StatementNode[][]
 	Tokens: ParserNode["Tokens"] & {
 		["if/else/elseif"]: Token[]
@@ -470,7 +473,7 @@ export interface IfStatement extends ParserNode {
 export interface WhileStatement extends ParserNode {
 	Type: "statement"
 	Kind: "while"
-	expression: ExpressionNode
+	expression: PrimaryExpressionNode
 	statements: StatementNode[]
 	Tokens: ParserNode["Tokens"] & {
 		["while"]: Token
@@ -483,9 +486,9 @@ export interface ForNumericStatement extends ParserNode {
 	Type: "statement"
 	Kind: "numeric_for"
 	identifier: Token
-	init_expression: ExpressionNode
-	max_expression: ExpressionNode
-	step_expression?: ExpressionNode
+	init_expression: PrimaryExpressionNode
+	max_expression: PrimaryExpressionNode
+	step_expression?: PrimaryExpressionNode
 	statements: StatementNode[]
 	Tokens: ParserNode["Tokens"] & {
 		["for"]: Token
@@ -499,8 +502,8 @@ export interface ForNumericStatement extends ParserNode {
 export interface ForGenericStatement extends ParserNode {
 	Type: "statement"
 	Kind: "generic_for"
-	identifiers: ExpressionNode[]
-	expressions: ExpressionNode[]
+	identifiers: PrimaryExpressionNode[]
+	expressions: PrimaryExpressionNode[]
 	statements: StatementNode[]
 	Tokens: ParserNode["Tokens"] & {
 		["for"]: Token
@@ -516,8 +519,8 @@ export interface ForGenericStatement extends ParserNode {
 export interface AssignmentLocalStatement extends ParserNode {
 	Type: "statement"
 	Kind: "local_assignment"
-	identifiers: ExpressionNode[]
-	expressions: ExpressionNode[]
+	identifiers: PrimaryExpressionNode[]
+	expressions: PrimaryExpressionNode[]
 	Tokens: ParserNode["Tokens"] & {
 		["local"]: Token
 		["left,"]: Token[]
@@ -529,8 +532,8 @@ export interface AssignmentLocalStatement extends ParserNode {
 export interface AssignmentLocalTypeStatement extends ParserNode {
 	Type: "statement"
 	Kind: "local_type_assignment"
-	identifiers: ExpressionNode[]
-	expressions: ExpressionNode[]
+	identifiers: PrimaryExpressionNode[]
+	expressions: PrimaryExpressionNode[]
 	Tokens: ParserNode["Tokens"] & {
 		["type"]: Token
 		["local"]: Token
@@ -546,7 +549,7 @@ export interface AssignmentDestructureStatement extends ParserNode {
 	default: ValueExpression
 	default_comma: Token
 	left: ValueExpression[]
-	right: ExpressionNode
+	right: PrimaryExpressionNode
 	Tokens: ParserNode["Tokens"] & {
 		["{"]: Token
 		[","]: Token[]
@@ -560,7 +563,7 @@ export interface AssignmentLocalDestructureStatement extends ParserNode {
 	default: ValueExpression
 	default_comma: Token
 	left: ValueExpression[]
-	right: ExpressionNode
+	right: PrimaryExpressionNode
 	Tokens: ParserNode["Tokens"] & {
 		["local"]: Token
 		["{"]: Token
@@ -573,8 +576,8 @@ export interface AssignmentLocalDestructureStatement extends ParserNode {
 export interface AssignmentStatement extends ParserNode {
 	Type: "statement"
 	Kind: "assignment"
-	left: ExpressionNode[]
-	right: ExpressionNode[]
+	left: PrimaryExpressionNode[]
+	right: PrimaryExpressionNode[]
 	Tokens: ParserNode["Tokens"] & {
 		["="]: Token
 		["left,"]: Token[]
@@ -585,7 +588,7 @@ export interface AssignmentStatement extends ParserNode {
 export interface CallExpressionStatement extends ParserNode {
 	Type: "statement"
 	Kind: "call_expression"
-	expression: ExpressionNode
+	expression: PrimaryExpressionNode
 }
 
 export interface FunctionSignatureTypeExpression extends ParserNode {
@@ -612,8 +615,8 @@ export interface FunctionSignatureTypeExpression extends ParserNode {
 export interface AssignmentTypeStatement extends ParserNode {
 	Type: "statement"
 	Kind: "type_assignment"
-	left: ExpressionNode[]
-	right: ExpressionNode[]
+	left: PrimaryExpressionNode[]
+	right: PrimaryExpressionNode[]
 	Tokens: ParserNode["Tokens"] & {
 		["type"]: Token
 		["="]: Token
@@ -682,7 +685,7 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 	}
 
 	ReadSubExpression(primary: PrimaryExpressionNode) {
-		let node: PrimaryExpressionNode | SubExpressionNode = primary
+		let node: AnyExpressionNode = primary
 		for (let i = 0; i < this.GetLength(); i++) {
 			const primary = node
 
@@ -710,11 +713,11 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 			node = sub
 		}
 
-		return node as SubExpressionNode
+		return node as unknown as SubExpressionNode
 	}
 
 	ReadSubTypeExpression(primary: PrimaryExpressionNode) {
-		let node: PrimaryExpressionNode | SubExpressionNode = primary
+		let node: AnyExpressionNode = primary
 		for (let i = 0; i < this.GetLength(); i++) {
 			const primary = node
 
@@ -1368,7 +1371,7 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 	}
 
 	ReadIndexExpression() {
-		let node = this.StartNode("expression", "value") as BinaryOperatorSubExpression | ValueExpression
+		let node = this.StartNode("expression", "value") as BinaryOperatorExpression | ValueExpression
 		if (node.Kind == "value") {
 			node.value = this.ExpectType("letter")
 		}
@@ -1715,7 +1718,12 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 		_,
 		Primary extends () => PrimaryExpressionNode | undefined,
 		Sub extends (node: PrimaryExpressionNode) => SubExpressionNode | undefined,
-	>(priority: number, primary_reader: Primary, sub_reader: Sub, syntax: BaseSyntax): ExpressionNode | undefined {
+	>(
+		priority: number,
+		primary_reader: Primary,
+		sub_reader: Sub,
+		syntax: BaseSyntax,
+	): PrimaryExpressionNode | undefined {
 		if (this.GetPreferTypesystem()) {
 			return this.ReadTypeExpression(priority)
 		}
@@ -1770,7 +1778,7 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 			this.EndNode(node)
 		}
 
-		return node
+		return node as unknown as PrimaryExpressionNode
 	}
 	IsStartOfExpression() {
 		const token = this.GetToken()
