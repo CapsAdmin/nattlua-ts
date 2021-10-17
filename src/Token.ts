@@ -12,6 +12,7 @@ export type TokenType =
 	| "shebang" // whitespace?
 	| "discard"
 	| "unknown"
+	| "$"
 	| TokenWhitespaceType
 
 export interface Token {

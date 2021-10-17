@@ -11,6 +11,8 @@ export class ParserNode {
 	standalone_letter?: ParserNode
 	type_expression: ParserNode | undefined
 
+	environment: "runtime" | "typesystem" = "runtime"
+
 	Tokens: {
 		["("]?: Token[]
 		[")"]?: Token[]
