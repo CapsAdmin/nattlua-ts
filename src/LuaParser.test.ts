@@ -126,3 +126,13 @@ test("call", () => {
 test("repeat", () => {
 	check("repeat until true")
 })
+
+test("type assignment", () => {
+    check("type a = 1")
+    check("type a,b = 1,2")
+})
+
+test("function signature", () => {
+    check("type a = function=(a: number, b, c)>(boolean)")
+    check("type a = function=(a: number, b, c)>(boolean, number)")
+})

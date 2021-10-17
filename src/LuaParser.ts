@@ -66,6 +66,7 @@ export type StatementNode =
 	| LocalDestructureAssignmentStatement
 	| AssignmentStatement
 	| CallExpressionStatement
+	| TypeAssignmentStatement
 
 export type AnyParserNode = ExpressionNode | StatementNode
 
@@ -580,6 +581,19 @@ export interface FunctionSignatureExpression extends ParserNode {
 	}
 }
 
+export interface TypeAssignmentStatement extends ParserNode {
+    Type: "statement"
+    Kind: "type_assignment"
+    left: ExpressionNode[]
+	right: ExpressionNode[]
+	Tokens: ParserNode["Tokens"] & {
+		["type"]: Token
+		["="]: Token
+		["left,"]: Token[]
+		["right,"]: Token[]
+	}
+}
+
 export class LuaParser extends BaseParser<AnyParserNode> {
 	ReadAnalyzerDebugCodeStatement() {
 		if (!this.IsType("analyzer_debug_code")) return undefined
@@ -803,6 +817,19 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 
 		return this.EndNode(node)
 	}
+
+    private ReadFunctionSignatureArgument() {
+        let node = this.StartNode("expression", "function_argument")
+
+        if (this.IsType("letter") && this.IsValue(":", 1)) {
+            node.identifier = this.ExpectArgumentIdentifier()
+            node.Tokens[":"] = this.ExpectValue(":")
+        }
+
+		node.type_expression = this.ExpectTypeExpression()!
+
+		return this.EndNode(node)
+    }
 
 	private ReadFunctionArgument() {
 		let node = this.StartNode("expression", "function_argument")
@@ -1304,7 +1331,7 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 		node.Tokens["arguments,"] = []
 		node.identifiers = this.ReadMultipleValues(
 			undefined,
-			() => this.ReadTypeFunctionArgument(),
+			() => this.ReadFunctionSignatureArgument(),
 			node.Tokens["arguments,"],
 		)
 		node.Tokens["arguments)"] = this.ExpectValue(")")
@@ -1722,7 +1749,24 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 	}
 	ReadLocalTypeFunctionStatement() {}
 
-	ReadTypeAssignmentStatement() {}
+	ReadTypeAssignmentStatement() {
+        if (!(this.IsValue("type") && (this.IsType("letter", 1) || this.IsValue("^", 1)))) return
+
+        let node = this.StartNode("statement", "type_assignment")
+        node.Tokens["type"] = this.ExpectValue("type")
+
+        node.Tokens["left,"] = []
+        node.left = this.ReadMultipleValues(undefined, () => this.ReadExpression(0), node.Tokens["left,"])
+        node.environment = "typesystem"
+
+        if (this.IsValue("=")) {
+            node.Tokens["="] = this.ExpectValue("=")
+            node.Tokens["right,"] = []
+            node.right = this.ReadMultipleValues(undefined, () => this.ReadTypeExpression(0), node.Tokens["right,"])
+        }
+
+        return this.EndNode(node)
+    }
 
 	ReadLocalTypeAssignmentStatement() {}
 

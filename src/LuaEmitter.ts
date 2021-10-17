@@ -13,6 +13,8 @@ import {
 	ExpressionNode,
 	FunctionArgumentExpression,
 	FunctionExpression,
+	FunctionReturnTypeExpression,
+	FunctionSignatureExpression,
 	FunctionStatement,
 	GenericForStatement,
 	GotoLabelStatement,
@@ -33,6 +35,7 @@ import {
 	SemicolonStatement,
 	StatementNode,
 	TableExpression,
+	TypeAssignmentStatement,
 	TypeVarargExpression,
 	WhileStatement,
 } from "./LuaParser"
@@ -81,13 +84,22 @@ export class LuaEmitter extends BaseEmitter {
 		} else if (node.Kind == "while") {
 			this.EmitWhile(node)
 		} else if (node.Kind == "repeat") {
-			this.EmitRepeat(node)
+            this.EmitRepeat(node)
 		} else if (node.Kind == "analyzer_function" || node.Kind == "local_analyzer_function") {
-			this.EmitAnalyzerFunction(node)
+            this.EmitAnalyzerFunction(node)
+		} else if (node.Kind == "type_assignment") {
+            this.EmitTypeAssignment(node)
 		} else {
 			throw new Error("Unknown statement kind: " + node.Kind)
 		}
 	}
+    
+    EmitTypeAssignment(node: TypeAssignmentStatement) {
+		this.EmitToken(node.Tokens["type"])
+        this.EmitExpressionList(node.left, node.Tokens["left,"])
+		this.EmitToken(node.Tokens["="])
+		this.EmitExpressionList(node.right, node.Tokens["right,"])
+    }
 
 	EmitBreak(node: BreakStatement) {
 		this.EmitToken(node.Tokens["break"])
@@ -274,9 +286,16 @@ export class LuaEmitter extends BaseEmitter {
 
 		if (node.Tokens[":"]) {
 			this.EmitToken(node.Tokens[":"])
-			this.EmitExpression(node.type_expression)
 		}
+
+        if (node.type_expression) {
+            this.EmitExpression(node.type_expression)
+        }
 	}
+
+    EmitFunctionReturnType(node: FunctionReturnTypeExpression) {
+        this.EmitExpression(node.type_expression)
+    }
 
 	EmitFunction(node: FunctionStatement | LocalFunctionStatement | FunctionExpression) {
 		if (node.Kind == "local_function") {
@@ -324,6 +343,20 @@ export class LuaEmitter extends BaseEmitter {
 		this.EmitStatements(node.statements)
 		this.EmitToken(node.Tokens["end"])
 	}
+
+    EmitFunctionSignature(node: FunctionSignatureExpression) {
+        // check("function=(a, b, c)>boolean")
+
+        this.EmitToken(node.Tokens["function"])
+        this.EmitToken(node.Tokens["="])
+        this.EmitToken(node.Tokens["arguments("])
+        this.EmitExpressionList(node.identifiers, node.Tokens["arguments,"])
+        this.EmitToken(node.Tokens["arguments)"])
+        this.EmitToken(node.Tokens[">"])
+        this.EmitToken(node.Tokens["return("])
+        this.EmitExpressionList(node.return_types, node.Tokens["return,"])
+        this.EmitToken(node.Tokens["return)"])
+    }
 
 	EmitLocalFunction(node: LocalFunctionStatement) {}
 
@@ -467,8 +500,12 @@ export class LuaEmitter extends BaseEmitter {
 			this.EmitAnalyzerFunction(node)
 		} else if (node.Kind == "function_argument") {
 			this.EmitFunctionArgument(node)
+        } else if (node.Kind == "function_return_type") {
+			this.EmitFunctionReturnType(node)
 		} else if (node.Kind == "type_vararg") {
-			this.EmitTypeVararg(node)
+            this.EmitTypeVararg(node)
+		} else if (node.Kind == "function_signature") {
+            this.EmitFunctionSignature(node)
 		} else {
 			throw new Error("Unknown expression kind: " + node.Kind)
 		}
