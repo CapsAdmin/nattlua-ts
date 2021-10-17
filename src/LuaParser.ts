@@ -582,9 +582,9 @@ export interface FunctionSignatureExpression extends ParserNode {
 }
 
 export interface TypeAssignmentStatement extends ParserNode {
-    Type: "statement"
-    Kind: "type_assignment"
-    left: ExpressionNode[]
+	Type: "statement"
+	Kind: "type_assignment"
+	left: ExpressionNode[]
 	right: ExpressionNode[]
 	Tokens: ParserNode["Tokens"] & {
 		["type"]: Token
@@ -818,18 +818,18 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 		return this.EndNode(node)
 	}
 
-    private ReadFunctionSignatureArgument() {
-        let node = this.StartNode("expression", "function_argument")
+	private ReadFunctionSignatureArgument() {
+		let node = this.StartNode("expression", "function_argument")
 
-        if (this.IsType("letter") && this.IsValue(":", 1)) {
-            node.identifier = this.ExpectArgumentIdentifier()
-            node.Tokens[":"] = this.ExpectValue(":")
-        }
+		if (this.IsType("letter") && this.IsValue(":", 1)) {
+			node.identifier = this.ExpectArgumentIdentifier()
+			node.Tokens[":"] = this.ExpectValue(":")
+		}
 
 		node.type_expression = this.ExpectTypeExpression()!
 
 		return this.EndNode(node)
-    }
+	}
 
 	private ReadFunctionArgument() {
 		let node = this.StartNode("expression", "function_argument")
@@ -1329,22 +1329,27 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 
 		node.Tokens["arguments("] = this.ExpectValue("(")
 		node.Tokens["arguments,"] = []
-		node.identifiers = this.ReadMultipleValues(
-			undefined,
-			() => this.ReadFunctionSignatureArgument(),
-			node.Tokens["arguments,"],
-		)
+		if (!this.IsValue(")")) {
+			node.identifiers = this.ReadMultipleValues(
+				undefined,
+				() => this.ReadFunctionSignatureArgument(),
+				node.Tokens["arguments,"],
+			)
+		}
 		node.Tokens["arguments)"] = this.ExpectValue(")")
 
 		node.Tokens[">"] = this.ExpectValue(">")
 
 		node.Tokens["return("] = this.ExpectValue("(")
 		node.Tokens["return,"] = []
-		node.return_types = this.ReadMultipleValues(
-			undefined,
-			() => this.ReadFunctionReturnTypeExpression(),
-			node.Tokens["return,"],
-		)
+
+		if (!this.IsValue(")")) {
+			node.return_types = this.ReadMultipleValues(
+				undefined,
+				() => this.ReadFunctionReturnTypeExpression(),
+				node.Tokens["return,"],
+			)
+		}
 		node.Tokens["return)"] = this.ExpectValue(")")
 
 		return this.EndNode(node)
@@ -1750,23 +1755,23 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 	ReadLocalTypeFunctionStatement() {}
 
 	ReadTypeAssignmentStatement() {
-        if (!(this.IsValue("type") && (this.IsType("letter", 1) || this.IsValue("^", 1)))) return
+		if (!(this.IsValue("type") && (this.IsType("letter", 1) || this.IsValue("^", 1)))) return
 
-        let node = this.StartNode("statement", "type_assignment")
-        node.Tokens["type"] = this.ExpectValue("type")
+		let node = this.StartNode("statement", "type_assignment")
+		node.Tokens["type"] = this.ExpectValue("type")
 
-        node.Tokens["left,"] = []
-        node.left = this.ReadMultipleValues(undefined, () => this.ReadExpression(0), node.Tokens["left,"])
-        node.environment = "typesystem"
+		node.Tokens["left,"] = []
+		node.left = this.ReadMultipleValues(undefined, () => this.ReadExpression(0), node.Tokens["left,"])
+		node.environment = "typesystem"
 
-        if (this.IsValue("=")) {
-            node.Tokens["="] = this.ExpectValue("=")
-            node.Tokens["right,"] = []
-            node.right = this.ReadMultipleValues(undefined, () => this.ReadTypeExpression(0), node.Tokens["right,"])
-        }
+		if (this.IsValue("=")) {
+			node.Tokens["="] = this.ExpectValue("=")
+			node.Tokens["right,"] = []
+			node.right = this.ReadMultipleValues(undefined, () => this.ReadTypeExpression(0), node.Tokens["right,"])
+		}
 
-        return this.EndNode(node)
-    }
+		return this.EndNode(node)
+	}
 
 	ReadLocalTypeAssignmentStatement() {}
 

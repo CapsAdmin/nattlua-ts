@@ -133,6 +133,7 @@ test("type assignment", () => {
 })
 
 test("function signature", () => {
+    check("type a = function=()>()")
     check("type a = function=(a: number, b, c)>(boolean)")
     check("type a = function=(a: number, b, c)>(boolean, number)")
 })

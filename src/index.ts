@@ -4,7 +4,7 @@ import { LuaEmitter } from "./LuaEmitter"
 import { LuaLexer } from "./LuaLexer"
 import { LuaParser } from "./LuaParser"
 
-let code = new Code("type a = function=(a: number, b, c)>(boolean)")
+let code = new Code("type a = function=()>()")
 let lexer = new LuaLexer(code)
 let tokens = lexer.GetTokens()
 let parser = new LuaParser(tokens, code)
