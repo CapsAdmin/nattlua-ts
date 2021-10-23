@@ -66,10 +66,10 @@ export type StatementNode =
 	| AssignmentLocalDestructureStatement
 	| AssignmentLocalTypeStatement
 	| CallExpressionStatement
+	| EndOfFileStatement
 
 export type AnyExpressionNode = PrimaryExpressionNode | SubExpressionNode
 export type AnyParserNode = AnyExpressionNode | StatementNode
-
 export interface EmptyUnionTypeExpression extends ParserNode {
 	Type: "expression"
 	Kind: "empty_union"
@@ -203,6 +203,14 @@ export interface PostfixIndexSubExpression extends ParserNode {
 	Tokens: ParserNode["Tokens"] & {
 		["["]: Token
 		["]"]: Token
+	}
+}
+export interface EndOfFileStatement extends ParserNode {
+	Type: "statement"
+	Kind: "end_of_file"
+
+	Tokens: ParserNode["Tokens"] & {
+		["end_of_file"]: Token
 	}
 }
 
@@ -653,10 +661,17 @@ export interface AssignmentTypeStatement extends ParserNode {
 }
 
 export class LuaParser extends BaseParser<AnyParserNode> {
-	override ReadStatement() {
-		if (this.IsType("end_of_file")) return
+	ReadEndOfFile() {
+		if (!this.IsType("end_of_file")) return undefined
 
+		const node = this.StartNode("statement", "end_of_file")
+		node.Tokens["end_of_file"] = this.ExpectType("end_of_file")
+		return this.EndNode(node)
+	}
+
+	override ReadStatement() {
 		return (
+			this.ReadEndOfFile() ||
 			this.ReadAnalyzerDebugCodeStatement() ||
 			this.ReadParserDebugCodeStatement() ||
 			this.ReadReturnStatement() ||
@@ -1061,19 +1076,18 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 
 		for (let i = 0; i < this.GetLength(); i++) {
 			let token
+
 			if (i == 0) {
 				token = this.ExpectValue("if")
+			} else if (this.IsValue("else")) {
+				token = this.ExpectValue("else")
+			} else if (this.IsValue("elseif")) {
+				token = this.ExpectValue("elseif")
 			} else {
-				if (this.IsValue("else")) {
-					token = this.ExpectValue("else")
-				} else if (this.IsValue("elseif")) {
-					token = this.ExpectValue("elseif")
-				} else if (this.IsValue("end")) {
-					token = this.ExpectValue("end")
-				}
+				this.Error("Expected 'else' or 'elseif'")
 			}
 
-			if (!token) return
+			if (!token) return undefined
 
 			node.Tokens["if/else/elseif"][i] = token
 
@@ -1307,7 +1321,7 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 		if (!this.IsValue("(")) return undefined
 
 		const left_parentheses = this.ExpectValue("(")
-		const node = this.ReadExpression(0) as PrimaryExpressionNode
+		const node = this.ReadExpression(0) as PrimaryExpressionNode // we have to do to prevent infinite recursion in typescript
 
 		if (!node) {
 			this.Error("empty parentheses group", left_parentheses)

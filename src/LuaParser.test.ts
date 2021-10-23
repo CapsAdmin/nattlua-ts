@@ -13,6 +13,24 @@ const check = (codeString: string, expectedCode?: string) => {
 	expect(emitter.GetCode()).toBe(expectedCode || codeString)
 }
 
+test("smoke", () => {
+	check("return 1+1")
+	check("return\n1+ 1")
+})
+
+test("end of file comment", () => {
+	check("--test")
+})
+
+test("parenthesis", () => {
+	check("local a = 1 + (--[[bar]] 2 --[[faz]] + (3)--[[foo]])")
+})
+
+test("multiline string", () => {
+	check("local a = [==[test]==] --foo")
+	expect(() => check("a = [[a")).toThrow("expected multiline string")
+})
+
 test("expression", () => {
 	check("return 1 + 2")
 	check("return 1 - 2")
@@ -25,11 +43,6 @@ test("expression", () => {
 	check("return foo:Bar(1,2,3)")
 	check("local a = a++")
 	check("local a = -a")
-})
-
-test("smoke", () => {
-	check("return 1+1")
-	check("return\n1+ 1")
 })
 
 test("type code", () => {
@@ -95,6 +108,7 @@ test("if", () => {
 	check("if true then elseif true then end")
 	check("if true then elseif true then else end")
 	check("if true then else end")
+	expect(() => check("if true then else")).toThrow("'else' or 'elseif'")
 })
 
 test("semicolon", () => {
@@ -162,6 +176,7 @@ test("type assignment", () => {
 	check("type a = x as boolean")
 	check("type a: boolean = x")
 	check("type ^string = foo")
+	check("type MyTable = {[number] = string}")
 })
 
 test("function signature", () => {

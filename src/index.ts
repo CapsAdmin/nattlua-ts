@@ -3,7 +3,7 @@ import { LuaEmitter } from "./LuaEmitter"
 import { LuaLexer } from "./LuaLexer"
 import { LuaParser } from "./LuaParser"
 
-let code = new Code("analyzer function foo(): boolean end ")
+let code = new Code("local a = [==[test]==]")
 let lexer = new LuaLexer(code)
 let tokens = lexer.GetTokens()
 let parser = new LuaParser(tokens, code)

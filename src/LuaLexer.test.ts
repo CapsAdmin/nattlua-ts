@@ -15,11 +15,7 @@ const one_token = (tokens: Token[]) => {
 }
 
 test("unclosed multiline comment", () => {
-	try {
-		let tokens = tokenize("--[[")
-	} catch (err: Error) {
-		expect(err.message).toBe("Unclosed multiline comment")
-	}
+	expect(() => tokenize("--[[")).toThrow("Unclosed multiline comment")
 })
 
 test("smoke", () => {
@@ -36,11 +32,13 @@ test("shebang", () => {
 test("single quote string", () => {
 	expect(one_token(tokenize("'1'")).type).toBe("string")
 	expect(() => tokenize("'1")).toThrow("quote to end")
+	expect(() => tokenize("'1\n")).toThrow("quote to end")
 })
 
 test("double quote string", () => {
 	expect(one_token(tokenize('"1"')).type).toBe("string")
 	expect(() => tokenize('"1')).toThrow("quote to end")
+	expect(() => tokenize('"1\n')).toThrow("quote to end")
 })
 
 test("unknown", () => {
@@ -57,6 +55,14 @@ test("number..number", () => {
 
 test("bom header", () => {
 	expect(tokenize("1..20")).toHaveLength(4)
+})
+
+test("number annoation", () => {
+	expect(tokenize("50ull")).toHaveLength(2)
+	expect(tokenize("50uLL")).toHaveLength(2)
+	expect(tokenize("50ULL")).toHaveLength(2)
+	expect(tokenize("50LL")).toHaveLength(2)
+	expect(tokenize("50lL")).toHaveLength(2)
 })
 
 test("decimal number", () => {
@@ -82,6 +88,7 @@ test("bom header", () => {
 test("luajit binary number", () => {
 	expect(tokenize("0b010101")).toHaveLength(2)
 	expect(tokenize("0b0_101_01 0b101")).toHaveLength(3)
+	expect(tokenize("0b101ull")).toHaveLength(2)
 	expect(() => tokenize("0b010101.5.5")).toThrow("malformed number")
 })
 test("...", () => {
@@ -149,7 +156,9 @@ test("comments", () => {
 
 test("multiline string", () => {
 	expect(tokenize("a = [[a]]")).toHaveLength(4)
-	expect(() => tokenize("a = [[a")).toThrow("expected multiline string")
+	expect(tokenize("a = [=[a]=]")).toHaveLength(4)
+	expect(tokenize("a = [==[a]==]")).toHaveLength(4)
+	expect(() => tokenize("a = [=a")).toThrow("expected multiline string")
 })
 
 test("multiline error", () => {

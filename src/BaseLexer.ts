@@ -95,7 +95,9 @@ export class BaseLexer {
 
 	ReadFromArray(array: string[]) {
 		for (let annotation of array) {
-			if (this.GetString(this.GetPosition(), this.GetPosition() + annotation.length) == annotation) {
+			if (
+				this.GetString(this.GetPosition(), this.GetPosition() + annotation.length).toLowerCase() == annotation
+			) {
 				this.Advance(annotation.length)
 				return true
 			}

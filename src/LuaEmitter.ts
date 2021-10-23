@@ -100,6 +100,8 @@ export class LuaEmitter extends BaseEmitter {
 			this.EmitFunction(node)
 		} else if (node.Kind == "type_assignment") {
 			this.EmitTypeAssignment(node)
+		} else if (node.Kind == "end_of_file") {
+			this.EmitToken(node.Tokens["end_of_file"])
 		} else {
 			const _shouldNeverHappen: never = node
 			throw new Error("Unknown statement kind: " + (node as any).Kind)

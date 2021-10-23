@@ -274,12 +274,12 @@ export class LuaLexer extends BaseLexer {
 	}
 
 	ReadMultilineString(): TokenType | false {
-		if (this.IsValue("[", 0) && this.IsValue("[", 1)) {
+		if (this.IsValue("[", 0) && (this.IsValue("[", 1) || this.IsValue("=", 1))) {
 			let start = this.GetPosition()
 			this.Advance(1)
 
 			if (this.IsCurrentValue("=")) {
-				while (!this.TheEnd) {
+				while (!this.TheEnd()) {
 					this.Advance(1)
 					if (!this.IsCurrentValue("=")) break
 				}
