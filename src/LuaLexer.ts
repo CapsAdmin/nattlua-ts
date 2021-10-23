@@ -182,8 +182,7 @@ export class LuaLexer extends BaseLexer {
 
 			if (this.IsCurrentValue(".")) {
 				if (dot) {
-					// this.Error("dot can only be placed once")
-					return
+					this.Error("dot can only be placed once")
 				}
 				dot = true
 				this.Advance(1)
