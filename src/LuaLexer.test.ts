@@ -159,6 +159,7 @@ test("multiline string", () => {
 	expect(tokenize("a = [=[a]=]")).toHaveLength(4)
 	expect(tokenize("a = [==[a]==]")).toHaveLength(4)
 	expect(() => tokenize("a = [=a")).toThrow("expected multiline string")
+	expect(() => tokenize("a = [[a")).toThrow("expected multiline string")
 })
 
 test("multiline error", () => {
