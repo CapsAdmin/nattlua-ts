@@ -1,5 +1,24 @@
 import { BaseType, TypeErrors } from "./BaseType"
 import { Any } from "./Any"
+
+const operators = {
+	[">"]: (a: number, b: number) => a > b,
+	["<"]: (a: number, b: number) => a < b,
+	["<="]: (a: number, b: number) => a <= b,
+	[">="]: (a: number, b: number) => a >= b,
+}
+
+const compare = (val: number, min: number, max: number, operator: keyof typeof operators) => {
+	const func = operators[operator]
+
+	if (func(min, val) && func(max, val)) {
+		return true
+	} else if (!func(min, val) && !func(max, val)) {
+		return false
+	}
+
+	return null
+}
 export class Number extends BaseType {
 	override Data: number | undefined
 	override Type: string = "number"
@@ -7,6 +26,35 @@ export class Number extends BaseType {
 	override Falsy = false
 
 	Max: Number | undefined
+
+	LogicalComparison(B: Number, operator: keyof typeof operators) {
+		const A = this
+		const a_val = A.Data
+		const b_val = B.Data
+		if (!a_val) return
+		if (!b_val) return
+		const a_max = A.Max?.Data
+		const b_max = B.Max?.Data
+
+		if (a_max) {
+			if (b_max) {
+				const res_a = compare(b_val, a_val, b_max, ">=")
+				const res_b = !compare(a_val, b_val, a_max, "<=")
+				if (res_a != undefined && res_a == res_b) return res_a
+				return
+			}
+		}
+
+		if (a_max) {
+			const res = compare(b_val, a_val, a_max, ">=")
+			if (!res == undefined) return
+			return res
+		}
+
+		if (operators[operator](a_val, b_val)) return true
+
+		throw new Error("NYI " + operator)
+	}
 
 	SetLiteral(bool: boolean) {
 		this.Literal = bool

@@ -23,3 +23,7 @@ console.log(B.toString())
 
 console.log(A.IsSubsetOf(B))
 console.log(B.IsSubsetOf(A))
+
+let C = new Number(50).SetLiteral(true)
+
+console.log(A.LogicalComparison(C, "<"))
