@@ -17,7 +17,7 @@ const compare = (val: number, min: number, max: number, operator: keyof typeof o
 		return false
 	}
 
-	return null
+	return undefined
 }
 export class Number extends BaseType {
 	override Data: number | undefined
@@ -27,7 +27,7 @@ export class Number extends BaseType {
 
 	Max: Number | undefined
 
-	LogicalComparison(B: Number, operator: keyof typeof operators) {
+	LogicalComparison(B: Number, operator: keyof typeof operators): undefined | boolean {
 		const A = this
 		const a_val = A.Data
 		const b_val = B.Data
@@ -38,22 +38,20 @@ export class Number extends BaseType {
 
 		if (a_max) {
 			if (b_max) {
-				const res_a = compare(b_val, a_val, b_max, ">=")
-				const res_b = !compare(a_val, b_val, a_max, "<=")
-				if (res_a != undefined && res_a == res_b) return res_a
-				return
+				const res_a = compare(b_val, a_val, b_max, operator)
+				if (res_a != undefined) {
+					const res_b = compare(a_val, b_val, a_max, operator)
+					if (res_a == res_b) return res_a
+				}
+				return undefined
 			}
 		}
 
 		if (a_max) {
-			const res = compare(b_val, a_val, a_max, ">=")
-			if (!res == undefined) return
-			return res
+			return compare(b_val, a_val, a_max, operator)
 		}
 
-		if (operators[operator](a_val, b_val)) return true
-
-		throw new Error("NYI " + operator)
+		return operators[operator](a_val, b_val)
 	}
 
 	SetLiteral(bool: boolean) {
@@ -74,7 +72,7 @@ export class Number extends BaseType {
 	}
 
 	override toString() {
-		if (!this.Data) {
+		if (this.Data === undefined) {
 			return "number"
 		}
 
@@ -82,8 +80,10 @@ export class Number extends BaseType {
 
 		if (isNaN(this.Data)) {
 			str = "nan"
-		} else {
+		} else if (isFinite(this.Data)) {
 			str = this.Data.toString()
+		} else {
+			str = (this.Data < 0 ? "-" : "") + "inf"
 		}
 
 		if (this.Max) {
@@ -95,11 +95,15 @@ export class Number extends BaseType {
 		return "number(" + str + ")"
 	}
 
-	constructor(data?: number) {
+	constructor(data?: number, max?: number) {
 		super()
 		this.Data = data
-		if (data) {
+		if (data !== undefined) {
 			this.Literal = true
+		}
+
+		if (max) {
+			this.SetMax(new Number(max).SetLiteral(true))
 		}
 	}
 

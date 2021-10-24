@@ -45,7 +45,6 @@ import {
 	TableExpressionKeyValueSubExpression,
 	TableIndexValueSubExpression,
 	TableKeyValueSubExpression,
-	TableSpreadSubExpression,
 	VarargTypeExpression,
 	WhileStatement,
 } from "./LuaParser"

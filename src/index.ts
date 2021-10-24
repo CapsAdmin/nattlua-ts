@@ -13,17 +13,7 @@ let emitter = new LuaEmitter()
 emitter.EmitStatements(statements)
 console.log(emitter.GetCode())
 
-let A = new Number(42)
-A.Literal = true
+let A = new Number(30, 50)
+let B = new Number(35)
 
-let B = new Number()
-
-console.log(A.toString())
-console.log(B.toString())
-
-console.log(A.IsSubsetOf(B))
-console.log(B.IsSubsetOf(A))
-
-let C = new Number(50).SetLiteral(true)
-
-console.log(A.LogicalComparison(C, "<"))
+console.log(A.LogicalComparison(B, "<="))
