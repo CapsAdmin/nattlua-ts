@@ -4,11 +4,11 @@ import { LuaLexer } from "./LuaLexer"
 import { LuaParser } from "./LuaParser"
 
 const check = (codeString: string, expectedCode?: string) => {
-	let code = new Code(codeString)
-	let lexer = new LuaLexer(code)
-	let parser = new LuaParser(lexer.GetTokens(), code)
-	let statements = parser.ReadStatements()
-	let emitter = new LuaEmitter()
+	const code = new Code(codeString)
+	const lexer = new LuaLexer(code)
+	const parser = new LuaParser(lexer.GetTokens(), code)
+	const statements = parser.ReadStatements()
+	const emitter = new LuaEmitter()
 	emitter.EmitStatements(statements)
 	expect(emitter.GetCode()).toBe(expectedCode || codeString)
 }

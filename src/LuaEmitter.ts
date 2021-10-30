@@ -109,7 +109,7 @@ export class LuaEmitter extends BaseEmitter {
 
 	EmitExpression(node: AnyExpressionNode) {
 		if (node.Tokens["("]) {
-			for (let token of node.Tokens["("]) {
+			for (const token of node.Tokens["("]) {
 				this.EmitToken(token)
 			}
 		}
@@ -170,7 +170,7 @@ export class LuaEmitter extends BaseEmitter {
 		}
 
 		if (node.Tokens[")"]) {
-			for (let token of node.Tokens[")"]) {
+			for (const token of node.Tokens[")"]) {
 				this.EmitToken(token)
 			}
 		}
@@ -314,7 +314,7 @@ export class LuaEmitter extends BaseEmitter {
 
 	EmitIf(node: IfStatement) {
 		let i = 0
-		for (let statements of node.statements) {
+		for (const statements of node.statements) {
 			this.EmitToken(node.Tokens["if/else/elseif"][i]!)
 			if (node.expressions[i]) {
 				this.EmitExpression(node.expressions[i]!)
@@ -335,7 +335,7 @@ export class LuaEmitter extends BaseEmitter {
 
 		{
 			let i = 0
-			for (let identifier of node.identifiers) {
+			for (const identifier of node.identifiers) {
 				this.EmitExpression(identifier)
 				if (node.Tokens["left,"][i]) {
 					this.EmitToken(node.Tokens["left,"][i]!)
@@ -350,7 +350,7 @@ export class LuaEmitter extends BaseEmitter {
 
 		{
 			let i = 0
-			for (let expression of node.expressions) {
+			for (const expression of node.expressions) {
 				this.EmitExpression(expression)
 				if (node.Tokens["right,"][i]) {
 					this.EmitToken(node.Tokens["right,"][i]!)
@@ -486,7 +486,7 @@ export class LuaEmitter extends BaseEmitter {
 	EmitLocalFunction(node: FunctionLocalStatement) {}
 
 	EmitStatements(nodes: StatementNode[]) {
-		for (let node of nodes) {
+		for (const node of nodes) {
 			this.EmitStatement(node)
 		}
 	}
@@ -501,7 +501,7 @@ export class LuaEmitter extends BaseEmitter {
 
 	EmitExpressionList(nodes: AnyExpressionNode[], separator: Token[]) {
 		let i = 0
-		for (let node of nodes) {
+		for (const node of nodes) {
 			this.EmitExpression(node)
 			if (separator[i]) {
 				this.EmitToken(separator[i]!)
@@ -547,7 +547,7 @@ export class LuaEmitter extends BaseEmitter {
 
 		if (tree.children.length > 0) {
 			let i = 0
-			for (let node of tree.children) {
+			for (const node of tree.children) {
 				if (node.Kind == "table_index_value") {
 					if (node.spread) {
 						if (during_spread) {

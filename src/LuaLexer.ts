@@ -89,7 +89,7 @@ export class LuaLexer extends BaseLexer {
 			this.IsValue("[", 2) &&
 			(this.IsValue("[", 3) || this.IsValue("=", 3))
 		) {
-			let start = this.GetPosition()
+			const start = this.GetPosition()
 			this.Advance(3)
 
 			while (this.IsCurrentValue("=")) {
@@ -103,7 +103,7 @@ export class LuaLexer extends BaseLexer {
 
 			this.Advance(1)
 
-			let pos = this.FindNearest("]" + "=".repeat(this.GetPosition() - start - 4) + "]")
+			const pos = this.FindNearest("]" + "=".repeat(this.GetPosition() - start - 4) + "]")
 			if (pos) {
 				this.SetPosition(pos)
 				return "multiline_comment"
@@ -275,7 +275,7 @@ export class LuaLexer extends BaseLexer {
 
 	ReadMultilineString(): TokenType | false {
 		if (this.IsValue("[", 0) && (this.IsValue("[", 1) || this.IsValue("=", 1))) {
-			let start = this.GetPosition()
+			const start = this.GetPosition()
 			this.Advance(1)
 
 			if (this.IsCurrentValue("=")) {
@@ -300,8 +300,8 @@ export class LuaLexer extends BaseLexer {
 
 			this.Advance(1)
 
-			let closing = "]" + "=".repeat(this.GetPosition() - start - 2) + "]"
-			let pos = this.FindNearest(closing)
+			const closing = "]" + "=".repeat(this.GetPosition() - start - 2) + "]"
+			const pos = this.FindNearest(closing)
 
 			if (pos) {
 				this.SetPosition(pos)
@@ -317,14 +317,14 @@ export class LuaLexer extends BaseLexer {
 	ReadQuotedString(name: string, quote: string): TokenType | false {
 		if (!this.IsCurrentValue(quote)) return false
 
-		let start = this.GetPosition()
+		const start = this.GetPosition()
 		this.Advance(1)
 
 		while (!this.TheEnd()) {
-			let char = this.ReadChar()
+			const char = this.ReadChar()
 
 			if (char == B("\\")) {
-				let char = this.ReadChar()
+				const char = this.ReadChar()
 
 				if (char == B("z") && !this.IsCurrentValue(quote)) {
 					this.ReadSpace()
@@ -372,7 +372,7 @@ export class LuaLexer extends BaseLexer {
 		if (this.ReadRemainingCommentEscape()) return ["discard", false]
 
 		{
-			let name =
+			const name =
 				this.ReadSpace() ||
 				this.ReadCommentEscape() ||
 				this.ReadMultilineCComment() ||
@@ -383,7 +383,7 @@ export class LuaLexer extends BaseLexer {
 		}
 
 		{
-			let name =
+			const name =
 				this.ReadInlineTypeCode() ||
 				this.ReadInlineParserCode() ||
 				this.ReadNumber() ||

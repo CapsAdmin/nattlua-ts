@@ -1,13 +1,13 @@
 import { Any } from "./Any"
-import { Number } from "./Number"
+import { LNumberFromString, Number } from "./Number"
 
 const any = new Any()
 
 const all_numbers = new Number()
 
-let _32_to_52 = new Number(32, 52)
-let _40_to_45 = new Number(40, 45)
-let _42 = new Number(42)
+const _32_to_52 = new Number(32, 52)
+const _40_to_45 = new Number(40, 45)
+const _42 = new Number(42)
 
 test("a literal number should be contained within all numbers", () => {
 	expect(_42.IsSubsetOf(all_numbers)).toBe(true)
@@ -34,8 +34,8 @@ test("32..52 should not be contained within 42", () => {
 })
 
 test("operators", () => {
-	let _42 = new Number(42)
-	let _21 = new Number(21)
+	const _42 = new Number(42)
+	const _21 = new Number(21)
 
 	expect(_21.LogicalComparison(_42, "<=")).toBe(true)
 	expect(_21.LogicalComparison(_42, ">=")).toBe(false)
@@ -53,15 +53,19 @@ test("operators", () => {
 })
 
 test("tostring", () => {
-	expect(new Number(NaN).SetLiteral(true).toString()).toBe("nan")
-	expect(new Number(Infinity).SetLiteral(true).toString()).toBe("inf")
-	expect(new Number(-Infinity).SetLiteral(true).toString()).toBe("-inf")
+	expect(new Number().toString()).toBe("number")
+	expect(new Number(NaN).toString()).toBe("nan")
+	expect(new Number(Infinity).toString()).toBe("inf")
+	expect(new Number(-Infinity).toString()).toBe("-inf")
 	expect(_32_to_52.toString()).toBe("32..52")
 	expect(_40_to_45.toString()).toBe("40..45")
 	expect(_42.toString()).toBe("42")
 })
 
-test("range", () => {
-	let high = new Number(0)
-	let low = new Number(32)
+test("string to number", () => {
+	expect(LNumberFromString("0xDEADBEEF").Data).toBe(0xdeadbeef)
+	expect(LNumberFromString("0b10101").Data).toBe(0b10101)
+	expect(LNumberFromString("10ull").Data).toBe(10)
+	expect(LNumberFromString("10ll").Data).toBe(10)
+	expect(LNumberFromString("0.5").Data).toBe(0.5)
 })

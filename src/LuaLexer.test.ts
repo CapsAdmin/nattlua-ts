@@ -4,7 +4,7 @@ import { LuaRuntimeSyntax } from "./LuaRuntimeSyntax"
 import { Token } from "./Token"
 
 const tokenize = (codeString: string) => {
-	let code = new Code(codeString)
+	const code = new Code(codeString)
 	return new LuaLexer(code).GetTokens()
 }
 
@@ -98,7 +98,7 @@ test("...", () => {
 test("comment escape", () => {
 	let i = 0
 	let tokens: Token[]
-	let check = (what: string) => {
+	const check = (what: string) => {
 		expect(tokens[i]!.value).toBe(what)
 		i++
 	}
@@ -200,21 +200,21 @@ test("glua", () => {
 
 {
 	const gen_all_passes = (out: string[], prefix: string, parts: string[], psign: string, powers: string[]) => {
-		let passes = []
-		for (let p of parts) {
+		const passes = []
+		for (const p of parts) {
 			passes.push(p)
 		}
-		for (let p of parts) {
+		for (const p of parts) {
 			passes.push("." + p)
 		}
-		for (let a of parts) {
-			for (let b of parts) {
+		for (const a of parts) {
+			for (const b of parts) {
 				passes.push(a + "." + b)
 			}
 		}
-		for (let a of passes) {
+		for (const a of passes) {
 			out.push(prefix + a)
-			for (let b of powers) {
+			for (const b of powers) {
 				out.push(prefix + a + psign + b)
 				out.push(prefix + a + psign + "-" + b)
 				out.push(prefix + a + psign + "+" + b)
@@ -234,18 +234,18 @@ test("glua", () => {
 	const hex = "0123456789abcdefABCDEF"
 
 	const r = (l: string, min: number, max: number) => {
-		let out = []
+		const out = []
 		for (let i = 0; i < random_range(min, max); i++) {
-			let x = random(l.length)
+			const x = random(l.length)
 			out.push(l.charAt(x))
 		}
 		return out.join("")
 	}
 
-	let decs = ["0", "0" + r(dec, 1, 3), "1", r(dec, 1, 3)]
-	let hexs = ["0", "0" + r(hex, 1, 3), "1", r(hex, 1, 3)]
+	const decs = ["0", "0" + r(dec, 1, 3), "1", r(dec, 1, 3)]
+	const hexs = ["0", "0" + r(hex, 1, 3), "1", r(hex, 1, 3)]
 
-	let passes: string[] = []
+	const passes: string[] = []
 	gen_all_passes(passes, "", decs, "e", decs)
 	gen_all_passes(passes, "", decs, "E", decs)
 	gen_all_passes(passes, "0x", hexs, "p", decs)
@@ -254,14 +254,14 @@ test("glua", () => {
 	gen_all_passes(passes, "0X", hexs, "P", decs)
 
 	test("valid number literals", () => {
-		let lines = []
-		for (let [i, p] of passes.entries()) {
+		const lines = []
+		for (const [i, p] of passes.entries()) {
 			lines.push("local x" + (i + 1) + " = " + p)
 		}
-		let input = lines.join("\n")
+		const input = lines.join("\n")
 
 		// make sure the amount of tokens
-		let tokens = tokenize(input)
+		const tokens = tokenize(input)
 		expect(tokens.length).toBe(lines.length * 4 + 1)
 
 		// make sure all the tokens are numbers

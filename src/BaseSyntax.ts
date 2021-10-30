@@ -134,7 +134,7 @@ export abstract class BaseSyntax {
 
 	Build() {
 		const add_symbols = (tbl: typeof this.SymbolCharacters) => {
-			for (let symbol of tbl) {
+			for (const symbol of tbl) {
 				if (/[^\p{L}\d\s@#]/u.test(symbol)) {
 					this.symbols.push(symbol)
 				}
@@ -144,7 +144,7 @@ export abstract class BaseSyntax {
 		// extend the symbol characters from grammar rules
 		{
 			const add_binary_symbols = (tbl: typeof this.BinaryOperators) => {
-				for (let group of tbl) {
+				for (const group of tbl) {
 					for (let token of group) {
 						if (token.substr(0, 1) == "R") {
 							token = token.substr(1)
@@ -161,7 +161,7 @@ export abstract class BaseSyntax {
 			add_symbols(this.PostfixOperators)
 			add_symbols(this.PrimaryBinaryOperators)
 
-			for (let str of this.SymbolCharacters) {
+			for (const str of this.SymbolCharacters) {
 				this.symbols.push(str)
 			}
 
@@ -169,29 +169,29 @@ export abstract class BaseSyntax {
 		}
 
 		{
-			for (let [k, v] of Object.entries(this.BinaryOperatorFunctionTranslate)) {
-				let [, a, b, c] = Array.from(v.match(/(.*)A(.*)B(.*)/)?.values() || [])
+			for (const [k, v] of Object.entries(this.BinaryOperatorFunctionTranslate)) {
+				const [, a, b, c] = Array.from(v.match(/(.*)A(.*)B(.*)/)?.values() || [])
 				if (a && b && c) {
 					this.lookup[k] = [" " + a, b, c + " "]
 				}
 			}
 
-			for (let [k, v] of Object.entries(this.PrefixOperatorFunctionTranslate)) {
-				let [, a, b] = Array.from(v.match(/(.*)A(.*)B/)?.values() || [])
+			for (const [k, v] of Object.entries(this.PrefixOperatorFunctionTranslate)) {
+				const [, a, b] = Array.from(v.match(/(.*)A(.*)B/)?.values() || [])
 				if (a && b) {
 					this.lookup[k] = [" " + a, b + " "]
 				}
 			}
 
-			for (let [k, v] of Object.entries(this.PostfixOperatorFunctionTranslate)) {
-				let [, a, b] = Array.from(v.match(/(.*)A(.*)/)?.values() || [])
+			for (const [k, v] of Object.entries(this.PostfixOperatorFunctionTranslate)) {
+				const [, a, b] = Array.from(v.match(/(.*)A(.*)/)?.values() || [])
 				if (a && b) {
 					this.lookup[k] = [" " + a, b + " "]
 				}
 			}
 
-			for (let [priority, group] of this.BinaryOperators.entries()) {
-				for (let token of group) {
+			for (const [priority, group] of this.BinaryOperators.entries()) {
+				for (const token of group) {
 					if (token.substr(0, 1) == "R") {
 						this.binary_operator_info[token.substr(1)] = {
 							left_priority: priority + 1,
@@ -206,36 +206,36 @@ export abstract class BaseSyntax {
 				}
 			}
 
-			for (let key of this.PrimaryBinaryOperators) {
+			for (const key of this.PrimaryBinaryOperators) {
 				this.PrimaryBinaryOperatorsLookup.add(key)
 			}
 
-			for (let key of this.PrefixOperators) {
+			for (const key of this.PrefixOperators) {
 				this.PrefixOperatorsLookup.add(key)
 			}
 
-			for (let key of this.PostfixOperators) {
+			for (const key of this.PostfixOperators) {
 				this.PostfixOperatorsLookup.add(key)
 			}
 
-			for (let key of this.KeywordValues) {
+			for (const key of this.KeywordValues) {
 				this.KeywordValuesLookup.add(key)
 			}
 
-			for (let key of this.KeywordValues) {
+			for (const key of this.KeywordValues) {
 				this.KeywordLookup.add(key)
 			}
 
-			for (let key of this.Keywords) {
+			for (const key of this.Keywords) {
 				this.KeywordLookup.add(key)
 			}
 
-			for (let key of this.NonStandardKeywords) {
+			for (const key of this.NonStandardKeywords) {
 				this.NonStandardKeywordLookup.add(key)
 			}
 		}
 
-		for (let char of [
+		for (const char of [
 			"0",
 			"1",
 			"2",

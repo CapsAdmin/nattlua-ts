@@ -1,7 +1,7 @@
 import { Token } from "./Token"
 
 export class BaseEmitter {
-	level: number = 0
+	level = 0
 	last_non_space_index = 0
 	last_newline_index = 0
 	config: {
@@ -54,7 +54,7 @@ export class BaseEmitter {
 	}
 
 	GetPrevChar() {
-		let prev = this.out[this.out.length - 1]
+		const prev = this.out[this.out.length - 1]
 		if (prev == undefined) {
 			return ""
 		}
@@ -81,7 +81,7 @@ export class BaseEmitter {
 				let emit_all_whitespace = false
 
 				for (let _i = 0, _len = node.whitespace.length; _i < _len; _i++) {
-					let token = node.whitespace[_i]!
+					const token = node.whitespace[_i]!
 
 					if (token.type == "line_comment" || token.type == "multiline_comment") {
 						emit_all_whitespace = true
@@ -91,30 +91,37 @@ export class BaseEmitter {
 				}
 
 				if (emit_all_whitespace) {
-					if (this.last_non_space_index) {
+					if (this.last_non_space_index !== undefined) {
 						for (let i = this.last_non_space_index + 1; i < this.out.length; i++) {
 							this.out[i] = ""
 						}
 					}
 
-					for (let token of node.whitespace) {
+					for (const token of node.whitespace) {
 						this.EmitToken(token)
 					}
 				}
 			} else {
-				for (let token of node.whitespace) {
+				for (const token of node.whitespace) {
 					this.EmitWhitespace(token)
 				}
 			}
 		}
 
-		if (this.TranslateToken) {
-			translate = this.TranslateToken(node) || translate
+		const tr = this.TranslateToken(node)
+
+		if (tr !== undefined) {
+			translate = tr
 		}
 
 		if (translate !== undefined) {
 			if (typeof translate == "object") {
-				this.Emit(translate[node.value] || node.value)
+				const tr = translate[node.value]
+				if (tr !== undefined) {
+					this.Emit(tr)
+				} else {
+					this.Emit(node.value)
+				}
 			} else if (typeof translate == "function") {
 				this.Emit(translate(node.value))
 			} else if (translate !== "") {
@@ -130,6 +137,6 @@ export class BaseEmitter {
 	}
 
 	TranslateToken(node: string | Token) {
-		return ""
+		return undefined
 	}
 }

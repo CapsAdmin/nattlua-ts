@@ -5,8 +5,8 @@ import { Token } from "./Token"
 
 export class ParserNode {
 	Type: "expression" | "statement" = "statement"
-	Kind: string = "unknown"
-	id: number = 0
+	Kind = "unknown"
+	id = 0
 	Parent: ParserNode | undefined
 	standalone_letter?: ParserNode
 	type_expression: ParserNode | undefined
@@ -41,7 +41,7 @@ export class BaseParser<NodeTypes extends ParserNode> {
 		path?: string
 		on_statement?: <T>(node: T) => T | undefined
 	} = {}
-	i: number = 0
+	i = 0
 	constructor(tokens: Token[], code: Code) {
 		this.Tokens = tokens
 		this.Code = code
@@ -55,26 +55,26 @@ export class BaseParser<NodeTypes extends ParserNode> {
 	Advance(offset: number) {
 		this.i += offset
 	}
-	IsType(token_type: Token["type"], offset: number = 0) {
-		let tk = this.GetToken(offset)
+	IsType(token_type: Token["type"], offset = 0) {
+		const tk = this.GetToken(offset)
 		return tk && tk.type == token_type
 	}
-	IsValue(value: string, offset: number = 0) {
-		let tk = this.GetToken(offset)
+	IsValue(value: string, offset = 0) {
+		const tk = this.GetToken(offset)
 		return tk && tk.value == value
 	}
 	OnError(message: string, start: number, stop: number, ...args: any[]) {
 		throw new Error(Helpers.FormatError(this.Code, message, start, stop, args))
 	}
 	Error(msg: string, start_token?: Token, stop_token?: Token, ...args: any[]) {
-		let tk = this.GetToken()
-		let start = start_token ? start_token.start : tk ? tk.start : 0
-		let stop = stop_token ? stop_token.start : tk ? tk.stop : 0
+		const tk = this.GetToken()
+		const start = start_token ? start_token.start : tk ? tk.start : 0
+		const stop = stop_token ? stop_token.start : tk ? tk.stop : 0
 
 		this.OnError(msg, start, stop, ...args)
 	}
 	private ErrorExpect(str: string, what: keyof Token, start?: Token, stop?: Token) {
-		let tk = this.GetToken()
+		const tk = this.GetToken()
 		if (!tk) {
 			return this.Error("expected $1 $2: reached end of code", start, stop, what, str)
 		}
@@ -94,7 +94,7 @@ export class BaseParser<NodeTypes extends ParserNode> {
 	}
 
 	ReadToken() {
-		let tk = this.GetToken()
+		const tk = this.GetToken()
 		if (!tk) return null
 		this.Advance(1)
 		tk.parent = this.Nodes[0]
@@ -107,7 +107,7 @@ export class BaseParser<NodeTypes extends ParserNode> {
 	>(type: Type, kind: Kind): Extract<NodeTypes, { Type: Type; Kind: Kind }> {
 		id++
 
-		let node = new ParserNode()
+		const node = new ParserNode()
 		node.Type = type
 		node.Kind = kind
 
@@ -133,12 +133,12 @@ export class BaseParser<NodeTypes extends ParserNode> {
 	OnNode(node: ParserNode) {}
 
 	AddTokens(tokens: Token[]) {
-		let eof = this.Tokens.pop()
+		const eof = this.Tokens.pop()
 
 		if (!eof) return
 
 		let i = 0
-		for (let token of tokens) {
+		for (const token of tokens) {
 			if (token.type == "end_of_file") break
 			this.Tokens.splice(this.i + i, 1, token)
 			i++
@@ -152,12 +152,12 @@ export class BaseParser<NodeTypes extends ParserNode> {
 	}
 
 	ReadStatements(stop_token?: { [key: string]: boolean }) {
-		let out = []
+		const out = []
 		for (let i = 0; i < this.GetLength(); i++) {
-			let tk = this.GetToken()
+			const tk = this.GetToken()
 			if (!tk) break
 			if (stop_token && stop_token[tk.value]) break
-			let node = this.ReadStatement()
+			const node = this.ReadStatement()
 			if (!node) break
 			out[i] = node
 

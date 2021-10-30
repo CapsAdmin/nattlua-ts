@@ -21,7 +21,7 @@ const compare = (val: number, min: number, max: number, operator: keyof typeof o
 }
 export class Number extends BaseType {
 	override Data: number | undefined
-	override Type: string = "number"
+	override Type = "number" as const
 	override Truthy = true
 	override Falsy = false
 
@@ -29,41 +29,37 @@ export class Number extends BaseType {
 
 	LogicalComparison(B: Number, operator: keyof typeof operators): undefined | boolean {
 		const A = this
+
+		if (A.Data === undefined || B.Data === undefined) {
+			return undefined
+		}
+
 		const a_val = A.Data
 		const b_val = B.Data
-		if (!a_val) return
-		if (!b_val) return
+
 		const a_max = A.Max?.Data
 		const b_max = B.Max?.Data
 
-		if (a_max) {
-			if (b_max) {
+		if (a_max !== undefined) {
+			if (b_max !== undefined) {
 				const res_a = compare(b_val, a_val, b_max, operator)
 				if (res_a != undefined) {
 					const res_b = compare(a_val, b_val, a_max, operator)
 					if (res_a == res_b) return res_a
 				}
-				return undefined
+			} else {
+				return compare(b_val, a_val, a_max, operator)
 			}
-		}
 
-		if (a_max) {
-			return compare(b_val, a_val, a_max, operator)
+			return undefined
 		}
 
 		return operators[operator](a_val, b_val)
 	}
-
-	SetLiteral(bool: boolean) {
-		this.Literal = bool
-		return this
-	}
-
 	SetMax(max: Number) {
-		if (max.Literal) {
+		if (max.Data !== undefined) {
 			this.Max = max
 		} else {
-			this.Literal = false
 			this.Data = undefined
 			this.Max = undefined
 		}
@@ -90,20 +86,14 @@ export class Number extends BaseType {
 			str += ".." + this.Max.toString()
 		}
 
-		if (this.Literal) return str
-
-		return "number(" + str + ")"
+		return str
 	}
 
 	constructor(data?: number, max?: number) {
 		super()
 		this.Data = data
-		if (data !== undefined) {
-			this.Literal = true
-		}
-
-		if (max) {
-			this.SetMax(new Number(max).SetLiteral(true))
+		if (max !== undefined) {
+			this.SetMax(new Number(max))
 		}
 	}
 
@@ -116,7 +106,7 @@ export class Number extends BaseType {
 
 		if (B instanceof Any) return true
 
-		if (A.Literal && B.Literal && A.Data && B.Data) {
+		if (A.Data !== undefined && B.Data !== undefined) {
 			// compare against literals
 
 			if (isNaN(A.Data) && isNaN(B.Data)) {
@@ -127,7 +117,7 @@ export class Number extends BaseType {
 				return true
 			}
 
-			if (B.Max && B.Max.Data) {
+			if (B.Max && B.Max.Data !== undefined) {
 				if (A.Data >= B.Data && A.Data <= B.Max.Data) {
 					return true
 				}
@@ -137,10 +127,10 @@ export class Number extends BaseType {
 		} else if (A.Data == undefined && B.Data == undefined) {
 			// number contains number
 			return true
-		} else if (A.Literal && !B.Literal) {
+		} else if (A.Data !== undefined && B.Data === undefined) {
 			// 42 subset of number
 			return true
-		} else if (!A.Literal && B.Literal) {
+		} else if (A.Data === undefined && B.Data !== undefined) {
 			// number subset of 42 ?
 			return TypeErrors.Subset(A, B)
 		}
@@ -149,23 +139,33 @@ export class Number extends BaseType {
 	}
 }
 
-export const LNumber = (num: number | undefined) => new Number(num).SetLiteral(true)
+export const LNumber = (num: number | undefined) => new Number(num)
 
 export const LNumberFromString = (str: string) => {
-	let num = parseFloat(str)
+	const lower = str.toLowerCase()
+	let num: number
 
-	if (isNaN(num)) {
-		let lower = str.toLowerCase()
-		if (lower.substr(0, 2) == "0b") {
-			num = parseInt(str.substr(2), 2)
-		} else if (lower.substr(0, 2) == "0x") {
-			num = parseInt(str.substr(2), 16)
-		} else if (lower.endsWith("ull")) {
-			num = parseInt(str.substr(0, str.length - 3), 10)
-		} else if (lower.endsWith("ll")) {
-			num = parseInt(str.substr(0, str.length - 2), 10)
-		}
+	if (lower.substr(0, 2) == "0b") {
+		num = parseInt(str.substr(2), 2)
+	} else if (lower.substr(0, 2) == "0x") {
+		num = parseInt(str.substr(2), 16)
+	} else if (lower.endsWith("ull")) {
+		num = parseInt(str.substr(0, str.length - 3), 10)
+	} else if (lower.endsWith("ll")) {
+		num = parseInt(str.substr(0, str.length - 2), 10)
+	} else if (str === "nan") {
+		num = NaN
+	} else if (str === "inf") {
+		num = Infinity
+	} else if (str === "-inf") {
+		num = -Infinity
+	} else {
+		num = parseFloat(str)
 	}
 
-	return new Number(num).SetLiteral(true)
+	if (num == undefined || !isFinite(num)) {
+		throw new Error("cannot convert number: " + str)
+	}
+
+	return new Number(num)
 }

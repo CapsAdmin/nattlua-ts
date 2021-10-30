@@ -4,11 +4,11 @@ import { Token, TokenType } from "./Token"
 
 export class BaseLexer {
 	private Code: Code
-	private Position: number = 0
+	private Position = 0
 
 	// useful when step debugging
-	private CurrentDebugChar: string = ""
-	private CurrentDebugByte: number = 0
+	private CurrentDebugChar = ""
+	private CurrentDebugByte = 0
 
 	GetLength(): number {
 		return this.Code.GetLength()
@@ -35,7 +35,7 @@ export class BaseLexer {
 	}
 
 	ReadChar() {
-		let char = this.GetCurrentByteChar()
+		const char = this.GetCurrentByteChar()
 		this.Advance(1)
 		return char
 	}
@@ -73,16 +73,21 @@ export class BaseLexer {
 		return this.IsCurrentByte(what.charCodeAt(0))
 	}
 
-	OnError(message: string, start: number, stop: number, ...args: any[]) {
+	OnError(message: string, start: number, stop: number, ...args: unknown[]) {
 		throw new Error(Helpers.FormatError(this.Code, message, start, stop, args))
 	}
 
-	Error(message: string, start?: number, stop?: number, ...args: any[]) {
-		this.OnError(message, start || this.Position, stop || this.Position, args)
+	Error(message: string, start?: number, stop?: number, ...args: unknown[]) {
+		this.OnError(
+			message,
+			start !== undefined ? start : this.Position,
+			stop !== undefined ? stop : this.Position,
+			args,
+		)
 	}
 
 	NewToken(type: TokenType, is_whitespace: boolean, start: number, stop: number) {
-		let token: Token = {
+		const token: Token = {
 			type: type,
 			is_whitespace: is_whitespace,
 			start: start,
@@ -94,7 +99,7 @@ export class BaseLexer {
 	}
 
 	ReadFromArray(array: string[]) {
-		for (let annotation of array) {
+		for (const annotation of array) {
 			if (
 				this.GetString(this.GetPosition(), this.GetPosition() + annotation.length).toLowerCase() == annotation
 			) {
@@ -140,7 +145,7 @@ export class BaseLexer {
 		if (this.ReadShebang()) {
 			return ["shebang", false, 0, this.Position]
 		}
-		let start = this.Position
+		const start = this.Position
 		let [type, is_whitespace] = this.Read()
 
 		if (!type) {
@@ -158,7 +163,7 @@ export class BaseLexer {
 	}
 
 	ReadToken() {
-		let [token_type, is_whitespace, start, stop] = this.ReadSimple()
+		const [token_type, is_whitespace, start, stop] = this.ReadSimple()
 		return this.NewToken(token_type, is_whitespace, start, stop)
 	}
 
@@ -166,19 +171,19 @@ export class BaseLexer {
 		this.ResetState()
 		let tokens: Token[] = []
 		while (true) {
-			let token = this.ReadToken()
+			const token = this.ReadToken()
 			tokens.push(token)
 			if (token.type == "end_of_file") break
 		}
 
-		for (let token of tokens) {
+		for (const token of tokens) {
 			token.value = this.GetString(token.start, token.stop)
 		}
 
 		let whitespace_buffer = []
-		let non_whitespace = []
+		const non_whitespace = []
 
-		for (let token of tokens) {
+		for (const token of tokens) {
 			if (token.type != "discard") {
 				if (token.is_whitespace) {
 					whitespace_buffer.push(token)
@@ -191,7 +196,7 @@ export class BaseLexer {
 		}
 
 		tokens = non_whitespace
-		let last = tokens[tokens.length - 1]
+		const last = tokens[tokens.length - 1]
 
 		if (last) {
 			last.value = ""

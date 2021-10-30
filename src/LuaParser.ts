@@ -558,7 +558,7 @@ export interface AssignmentLocalStatement extends ParserNode {
 	Tokens: ParserNode["Tokens"] & {
 		["local"]: Token
 		["left,"]: Token[]
-		["="]: Token
+		["="]?: Token
 		["right,"]: Token[]
 	}
 }

@@ -1,13 +1,14 @@
+import { String } from "./String"
 export const TypeErrors = {
 	Subset: function (a: BaseType, b: BaseType, reason?: string | string[]) {
-		let msg = [a, " is not a subset of ", b]
+		const msg = [a, " is not a subset of ", b]
 
-		if (reason) {
+		if (reason !== undefined) {
 			msg.push(" because ")
 			if (typeof reason === "string") {
 				msg.push(reason)
 			} else {
-				for (let str of reason) {
+				for (const str of reason) {
 					msg.push(str)
 				}
 			}
@@ -15,17 +16,30 @@ export const TypeErrors = {
 
 		return [false, msg] as const
 	},
+	TypeMismatch(a: BaseType, b: BaseType) {
+		return [false, a, " is not the same type as ", b] as const
+	},
+	Literal(a: BaseType) {
+		return [false, a, " is not a literal"] as const
+	},
+	StringPattern(a: string, pattern: string) {
+		return [false, a, " does not match the pattern " + pattern] as const
+	},
 }
+
+export type TypeError = [false, ...string[]]
 
 export class BaseType {
 	Data: unknown
-	Type: string = "unknown"
+	Type = "unknown"
 	Truthy = false
 	Falsy = false
-	Literal = false
-
 	toString() {
 		return "unknown"
+	}
+
+	IsLiteral() {
+		return this.Data !== undefined
 	}
 
 	Equal(other: BaseType): boolean {
