@@ -198,7 +198,7 @@ export class BaseLexer {
 		tokens = non_whitespace
 		const last = tokens[tokens.length - 1]
 
-		if (last) {
+		if (last != null) {
 			last.value = ""
 		}
 

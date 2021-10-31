@@ -2,7 +2,8 @@ import { BaseType, TypeErrors } from "./BaseType"
 import { Any } from "./Any"
 
 const LuaStringMatch = (str: string, pattern: string) => {
-	return false
+	// TODO: use lua pattern matching instead of regex
+	return str.match(pattern) != null
 }
 
 export class String extends BaseType {
@@ -32,12 +33,12 @@ export class String extends BaseType {
 	}
 
 	override toString() {
-		if (this.Data === undefined) {
-			return this.Type
-		}
-
 		if (this.PatternContract !== undefined) {
 			return "$(" + this.PatternContract + ")"
+		}
+
+		if (this.Data === undefined) {
+			return this.Type
 		}
 
 		return `"${this.Data}"`
@@ -56,6 +57,19 @@ export class String extends BaseType {
 		return t
 	}
 
+	override Equal(B: String) {
+		if (this.Data === undefined) return false
+		if (B.Data === undefined) return false
+
+		if (this.PatternContract !== undefined) {
+			if (B.PatternContract !== undefined) {
+				return this.PatternContract === B.PatternContract
+			}
+		}
+
+		return this.Data === B.Data
+	}
+
 	override IsSubsetOf(B: String | Any) {
 		const A = this
 
@@ -65,12 +79,6 @@ export class String extends BaseType {
 		if (A.Data !== undefined && B.Data !== undefined && A.Data == B.Data) {
 			// "A" subsetof "B"
 			return true
-		} else if (A.Data !== undefined && B.Data == undefined) {
-			// "A" subsetof string
-			return true
-		} else if (A.Data == undefined && B.Data == undefined) {
-			// string subsetof string
-			return true
 		}
 
 		if (B.PatternContract !== undefined) {
@@ -79,9 +87,29 @@ export class String extends BaseType {
 			if (!LuaStringMatch(A.Data, B.PatternContract)) {
 				return TypeErrors.StringPattern(A.Data, B.PatternContract)
 			}
+			return true
 		}
 
-		return true
+		if (A.PatternContract !== undefined) {
+			return false
+		}
+
+		if (A.Data !== undefined && B.Data == undefined) {
+			// "A" subsetof string
+			return true
+		}
+
+		if (A.Data === undefined && B.Data !== undefined) {
+			// string subsetof "B"
+			return true
+		}
+
+		if (A.Data == undefined && B.Data == undefined) {
+			// string subsetof string
+			return undefined
+		}
+
+		return undefined
 	}
 }
 

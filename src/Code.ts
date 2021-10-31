@@ -5,7 +5,11 @@ export class Code {
 	Name: string
 	constructor(code: string, name?: string) {
 		this.Buffer = new TextEncoder().encode(code)
-		this.Name = name || this.Substring(0, 8) + "..."
+		if (name !== undefined) {
+			this.Name = name
+		} else {
+			this.Name = this.Substring(0, 8) + "..."
+		}
 	}
 
 	Substring(start: number, stop: number): string {
@@ -22,7 +26,11 @@ export class Code {
 	}
 
 	GetByte(pos: number): number {
-		return this.Buffer[pos] || 0
+		const byte = this.Buffer[pos]
+		if (byte !== undefined) {
+			return byte
+		}
+		return 0
 	}
 
 	FindNearest(str: string, from: number) {

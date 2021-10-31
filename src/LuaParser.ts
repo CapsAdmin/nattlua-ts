@@ -102,7 +102,7 @@ export interface FunctionArgumentSubExpression extends ParserNode {
 	Type: "expression"
 	Kind: "function_argument"
 	identifier?: Token
-	type_expression: PrimaryExpressionNode
+	type_expression?: PrimaryExpressionNode
 	Tokens: ParserNode["Tokens"] & {
 		[":"]?: Token
 	}
@@ -580,7 +580,7 @@ export interface AssignmentLocalTypeStatement extends ParserNode {
 export interface AssignmentDestructureStatement extends ParserNode {
 	Type: "statement"
 	Kind: "destructure_assignment"
-	default: ValueExpression
+	default?: ValueExpression
 	default_comma: Token
 	left: ValueExpression[]
 	right: PrimaryExpressionNode
@@ -630,8 +630,8 @@ export interface FunctionSignatureTypeExpression extends ParserNode {
 	Kind: "function_signature"
 
 	stmnt: boolean // ???
-	identifiers: FunctionArgumentSubExpression[]
-	return_types: FunctionReturnTypeSubExpression[]
+	identifiers?: FunctionArgumentSubExpression[]
+	return_types?: FunctionReturnTypeSubExpression[]
 
 	Tokens: ParserNode["Tokens"] & {
 		["function"]: Token
@@ -1321,7 +1321,7 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 		if (!this.IsValue("(")) return undefined
 
 		const left_parentheses = this.ExpectValue("(")
-		const node = this.ReadExpression(0) as PrimaryExpressionNode // we have to do to prevent infinite recursion in typescript
+		const node = this.ReadExpression(0) as PrimaryExpressionNode | undefined // we have to do to prevent infinite recursion in typescript
 
 		if (!node) {
 			this.Error("empty parentheses group", left_parentheses)
@@ -1737,16 +1737,14 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 	) {
 		const out = []
 
-		for (let i = 0; i < (max || this.GetLength()); i++) {
+		for (let i = 0; i < (max !== undefined ? max : this.GetLength()); i++) {
 			const node = reader()
 			if (!node) break
 			out.push(node)
 
 			if (!this.IsValue(",")) break
 
-			if (comma_tokens) {
-				comma_tokens.push(this.ExpectValue(","))
-			}
+			comma_tokens.push(this.ExpectValue(","))
 		}
 
 		return out as NonNullable<ReturnType<T>>[]
@@ -1754,7 +1752,9 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 	private CheckIntegerDivision(token: Token) {
 		if (!token.integer_division_resolved && token.whitespace) {
 			for (let i = 0; i < token.whitespace.length; i++) {
-				const whitespace = token.whitespace[i]!
+				const whitespace = token.whitespace[i]
+
+				if (!whitespace) break
 
 				if (whitespace.value.indexOf("\n", 0) > -1) break
 
@@ -1818,10 +1818,7 @@ export class LuaParser extends BaseParser<AnyParserNode> {
 			node = this.StartNode("expression", "binary_operator")
 			node.operator = this.ReadToken()!
 			node.left = left_node
-
-			if (node.left) {
-				node.left.Parent = node
-			}
+			node.left.Parent = node
 
 			node.right = this.ExpectExpression(syntax.GetBinaryOperatorInfo(node.operator)!.right_priority)!
 

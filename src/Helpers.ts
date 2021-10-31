@@ -55,7 +55,7 @@ export class Helpers {
 		let indexString // $1, $2, $3, etc
 		while ((indexString = reg.exec(message))) {
 			const found = indexString[0]
-			if (!found) break
+			if (found == undefined) break
 			const index = parseInt(found.slice(1))
 			message = message.replace(found, "「" + args[index - 1] + "」")
 		}

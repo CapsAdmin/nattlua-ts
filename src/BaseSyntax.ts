@@ -171,21 +171,21 @@ export abstract class BaseSyntax {
 		{
 			for (const [k, v] of Object.entries(this.BinaryOperatorFunctionTranslate)) {
 				const [, a, b, c] = Array.from(v.match(/(.*)A(.*)B(.*)/)?.values() || [])
-				if (a && b && c) {
+				if (a !== undefined && b !== undefined && c !== undefined) {
 					this.lookup[k] = [" " + a, b, c + " "]
 				}
 			}
 
 			for (const [k, v] of Object.entries(this.PrefixOperatorFunctionTranslate)) {
 				const [, a, b] = Array.from(v.match(/(.*)A(.*)B/)?.values() || [])
-				if (a && b) {
+				if (a !== undefined && b !== undefined) {
 					this.lookup[k] = [" " + a, b + " "]
 				}
 			}
 
 			for (const [k, v] of Object.entries(this.PostfixOperatorFunctionTranslate)) {
 				const [, a, b] = Array.from(v.match(/(.*)A(.*)/)?.values() || [])
-				if (a && b) {
+				if (a !== undefined && b !== undefined) {
 					this.lookup[k] = [" " + a, b + " "]
 				}
 			}

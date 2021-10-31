@@ -1,6 +1,6 @@
 import { Code } from "./Code"
 import { Helpers } from "./Helpers"
-import { AnyParserNode, StatementNode } from "./LuaParser"
+import { StatementNode } from "./LuaParser"
 import { Token } from "./Token"
 
 export class ParserNode {
@@ -152,17 +152,18 @@ export class BaseParser<NodeTypes extends ParserNode> {
 	}
 
 	ReadStatements(stop_token?: { [key: string]: boolean }) {
-		const out = []
+		const out: StatementNode[] = []
 		for (let i = 0; i < this.GetLength(); i++) {
 			const tk = this.GetToken()
 			if (!tk) break
 			if (stop_token && stop_token[tk.value]) break
 			const node = this.ReadStatement()
 			if (!node) break
-			out[i] = node
 
-			if (this.config && this.config.on_statement) {
-				out[i] = this.config.on_statement(out[i]!) || out[i]!
+			if (this.config.on_statement) {
+				out[i] = this.config.on_statement(node) || node
+			} else {
+				out[i] = node
 			}
 		}
 		return out
