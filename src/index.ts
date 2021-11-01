@@ -2,18 +2,14 @@ import { Number } from "./Types/Number"
 import { Code } from "./Code"
 import { LuaEmitter } from "./LuaEmitter"
 import { LuaLexer } from "./LuaLexer"
-import { LuaParser } from "./LuaParser"
+import { LexicalScope } from "./Scope"
+import { String } from "./Types/String"
 
-const code = new Code("local a = [==[test]==]")
-const lexer = new LuaLexer(code)
-const tokens = lexer.GetTokens()
-const parser = new LuaParser(tokens, code)
-const statements = parser.ReadStatements()
-const emitter = new LuaEmitter()
-emitter.EmitStatements(statements)
-console.log(emitter.GetCode())
+const scope = new LexicalScope(undefined, 0)
+const T = new String()
+scope.CreateValue("lol", T, "runtime")
+const upvalue = scope.FindValue("lol", "runtime")
+const upvalue2 = scope.FindValue("lol", "typesystem")
+//expect(upvalue2).toBe(undefined)
 
-const A = new Number(30, 50)
-const B = new Number(35)
-
-console.log(A.LogicalComparison(B, "<="))
+console.log(scope.parent)

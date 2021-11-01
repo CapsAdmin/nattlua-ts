@@ -123,7 +123,7 @@ export const LStringFromString = (str: string) => {
 		} else {
 		}
 	} else {
-		return new String(str.substr(2, -2))
+		return new String(str.substr(1, str.length - 2))
 	}
 
 	throw new Error("cannot convert string: " + str)

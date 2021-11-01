@@ -1,5 +1,5 @@
 import { Any } from "./Any"
-import { String } from "./String"
+import { LStringFromString, String } from "./String"
 
 const foo = new String("foo")
 const all_letters = new String()
@@ -51,4 +51,18 @@ test("tostring", () => {
 
 test("subset", () => {
 	expect(new String().IsSubsetOf(new String())).toBe(undefined)
+})
+
+test("copy", () => {
+	const str = new String("1337")
+	expect(str.Copy().Equal(str)).toBe(true)
+
+	str.PatternContract = "lol"
+	expect(str.Copy().Equal(str)).toBe(true)
+})
+
+test("lua string", () => {
+	expect(LStringFromString("[[foo]]").Data).toBe("foo")
+	expect(LStringFromString("'foo'").Data).toBe("foo")
+	expect(LStringFromString('"foo"').Data).toBe("foo")
 })

@@ -1,4 +1,5 @@
-import { String } from "./String"
+import { AnyParserNode } from "../LuaParser"
+import { Upvalue } from "../Scope"
 export const TypeErrors = {
 	Subset: function (a: BaseType, b: BaseType, reason?: string | string[]) {
 		const msg = [a, " is not a subset of ", b]
@@ -34,6 +35,8 @@ export class BaseType {
 	Type = "unknown"
 	Truthy = false
 	Falsy = false
+	Node: AnyParserNode | undefined
+	upvalue: Upvalue | undefined
 	toString() {
 		return "unknown"
 	}
@@ -57,6 +60,16 @@ export class BaseType {
 	IsSubsetOf(T: BaseType) {}
 
 	Copy(): BaseType {
+		return this
+	}
+
+	SetNode(node: AnyParserNode) {
+		this.Node = node
+		return this
+	}
+
+	SetUpvalue(upvalue: Upvalue) {
+		this.upvalue = upvalue
 		return this
 	}
 }
