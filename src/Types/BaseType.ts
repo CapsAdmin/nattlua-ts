@@ -1,5 +1,12 @@
 import { AnyParserNode } from "../LuaParser"
 import { Upvalue } from "../Scope"
+import { TAny } from "./Any"
+import { TNumber } from "./Number"
+import { TString } from "./String"
+import { TSymbol } from "./Symbol"
+import { TUnion } from "./Union"
+
+export type Types = TString | TNumber | TUnion | TAny | TSymbol
 export const TypeErrors = {
 	Subset: function (a: BaseType, b: BaseType, reason?: string | string[]) {
 		const msg = [a, " is not a subset of ", b]
@@ -20,11 +27,20 @@ export const TypeErrors = {
 	TypeMismatch(a: BaseType, b: BaseType) {
 		return [false, a, " is not the same type as ", b] as const
 	},
+	ValueMismatch(a: BaseType, b: BaseType) {
+		return [false, a, " is not the same value as ", b] as const
+	},
 	Literal(a: BaseType) {
 		return [false, a, " is not a literal"] as const
 	},
 	StringPattern(a: string, pattern: string) {
 		return [false, a, " does not match the pattern " + pattern] as const
+	},
+	MissingType(a: AnyParserNode, b: AnyParserNode, reason: string) {
+		return [false, a, " is missing type ", b, " because ", reason] as const
+	},
+	Other(error: string[]) {
+		return [false, error] as const
 	},
 }
 
@@ -57,7 +73,7 @@ export class BaseType {
 		return this.Truthy && this.Falsy
 	}
 
-	IsSubsetOf(T: BaseType) {}
+	IsSubsetOf(T: BaseType): [boolean | undefined, string] {}
 
 	Copy(): BaseType {
 		return this
@@ -71,5 +87,9 @@ export class BaseType {
 	SetUpvalue(upvalue: Upvalue) {
 		this.upvalue = upvalue
 		return this
+	}
+
+	constructor(data: unknown) {
+		this.Data = data
 	}
 }

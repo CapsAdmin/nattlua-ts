@@ -1,5 +1,5 @@
 import { BaseType, TypeErrors } from "./BaseType"
-import { Any } from "./Any"
+import { TAny } from "./Any"
 
 const operators = {
 	[">"]: (a: number, b: number) => a > b,
@@ -19,15 +19,15 @@ const compare = (val: number, min: number, max: number, operator: keyof typeof o
 
 	return undefined
 }
-export class Number extends BaseType {
+export class TNumber extends BaseType {
 	override Data: number | undefined
 	override Type = "number" as const
 	override Truthy = true
 	override Falsy = false
 
-	Max: Number | undefined
+	Max: TNumber | undefined
 
-	LogicalComparison(B: Number, operator: keyof typeof operators): undefined | boolean {
+	LogicalComparison(B: TNumber, operator: keyof typeof operators): undefined | boolean {
 		const A = this
 
 		if (A.Data === undefined || B.Data === undefined) {
@@ -56,7 +56,7 @@ export class Number extends BaseType {
 
 		return operators[operator](a_val, b_val)
 	}
-	SetMax(max: Number) {
+	SetMax(max: TNumber) {
 		if (max.Data !== undefined) {
 			this.Max = max
 		} else {
@@ -90,21 +90,27 @@ export class Number extends BaseType {
 	}
 
 	constructor(data?: number, max?: number) {
-		super()
-		this.Data = data
+		super(data)
 		if (max !== undefined) {
-			this.SetMax(new Number(max))
+			this.SetMax(new TNumber(max))
 		}
 	}
 
 	override Copy() {
-		return new Number(this.Data)
+		return new TNumber(this.Data)
+	}
+	override Equal(B: TNumber) {
+		if (this.Data === undefined) return false
+		if (B.Data === undefined) return false
+		if (!(B instanceof TNumber)) return false
+
+		return this.Data === B.Data
 	}
 
-	override IsSubsetOf(B: Number | Any) {
+	override IsSubsetOf(B: TNumber | TAny) {
 		const A = this
 
-		if (B instanceof Any) return true
+		if (B instanceof TAny) return true
 
 		if (A.Data !== undefined && B.Data !== undefined) {
 			// compare against literals
@@ -139,7 +145,7 @@ export class Number extends BaseType {
 	}
 }
 
-export const LNumber = (num: number | undefined) => new Number(num)
+export const LNumber = (num: number | undefined) => new TNumber(num)
 
 export const LNumberFromString = (str: string) => {
 	const lower = str.toLowerCase()
@@ -167,5 +173,5 @@ export const LNumberFromString = (str: string) => {
 		throw new Error("cannot convert number: " + str)
 	}
 
-	return new Number(num)
+	return new TNumber(num)
 }

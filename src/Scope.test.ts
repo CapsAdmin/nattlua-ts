@@ -1,10 +1,10 @@
 import { LexicalScope } from "./Scope"
-import { Number } from "./Types/Number"
-import { String } from "./Types/String"
+import { TNumber } from "./Types/Number"
+import { TString } from "./Types/String"
 
 test("create and find upvalue", () => {
 	const scope = new LexicalScope(undefined, 0)
-	const T = new String()
+	const T = new TString()
 	scope.CreateValue("lol", T, "runtime")
 
 	const upvalue = scope.FindValue("lol", "runtime")
@@ -19,8 +19,8 @@ test("create and find upvalue", () => {
 
 test("shadowed upvalue", () => {
 	const scope = new LexicalScope(undefined, 0)
-	const str = new String()
-	const num = new Number()
+	const str = new TString()
+	const num = new TNumber()
 
 	scope.CreateValue("lol", str, "runtime")
 	scope.CreateValue("lol", num, "runtime")

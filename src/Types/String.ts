@@ -1,19 +1,19 @@
 import { BaseType, TypeErrors } from "./BaseType"
-import { Any } from "./Any"
+import { TAny } from "./Any"
 
 const LuaStringMatch = (str: string, pattern: string) => {
 	// TODO: use lua pattern matching instead of regex
 	return str.match(pattern) != null
 }
 
-export class String extends BaseType {
+export class TString extends BaseType {
 	override Data: string | undefined
 	PatternContract: string | undefined
 	override Type = "string" as const
 	override Truthy = true
 	override Falsy = false
 
-	LogicalComparison(B: String, operator: "<" | ">" | "=>" | "<="): undefined | boolean {
+	LogicalComparison(B: TString, operator: "<" | ">" | "=>" | "<="): undefined | boolean {
 		const A = this
 
 		if (A.Data === undefined) return undefined
@@ -45,19 +45,18 @@ export class String extends BaseType {
 	}
 
 	constructor(data?: string) {
-		super()
-		this.Data = data
+		super(data)
 	}
 
 	override Copy() {
-		const t = new String(this.Data)
+		const t = new TString(this.Data)
 
 		t.PatternContract = this.PatternContract
 
 		return t
 	}
 
-	override Equal(B: String) {
+	override Equal(B: TString) {
 		if (this.Data === undefined) return false
 		if (B.Data === undefined) return false
 
@@ -70,15 +69,15 @@ export class String extends BaseType {
 		return this.Data === B.Data
 	}
 
-	override IsSubsetOf(B: String | Any) {
+	override IsSubsetOf(B: TString | TAny) {
 		const A = this
 
-		if (B instanceof Any) return true
-		if (!(B instanceof String)) return TypeErrors.TypeMismatch(A, B)
+		if (B instanceof TAny) return true
+		if (!(B instanceof TString)) return TypeErrors.TypeMismatch(A, B)
 
 		if (A.Data !== undefined && B.Data !== undefined && A.Data == B.Data) {
 			// "A" subsetof "B"
-			return true
+			return [true, "identical data"]
 		}
 
 		if (B.PatternContract !== undefined) {
@@ -87,43 +86,43 @@ export class String extends BaseType {
 			if (!LuaStringMatch(A.Data, B.PatternContract)) {
 				return TypeErrors.StringPattern(A.Data, B.PatternContract)
 			}
-			return true
+			return [true, "pattern match"]
 		}
 
 		if (A.PatternContract !== undefined) {
-			return false
+			return [false, "pattern contract"]
 		}
 
 		if (A.Data !== undefined && B.Data == undefined) {
 			// "A" subsetof string
-			return true
+			return [true, "string"]
 		}
 
 		if (A.Data === undefined && B.Data !== undefined) {
 			// string subsetof "B"
-			return true
+			return [false, "string"]
 		}
 
 		if (A.Data == undefined && B.Data == undefined) {
 			// string subsetof string
-			return undefined
+			return [undefined, "string may be a subset of string"]
 		}
 
-		return undefined
+		return [undefined, "not sure"]
 	}
 }
 
-export const LString = (x: string | undefined) => new String(x)
+export const LString = (x: string | undefined) => new TString(x)
 
 export const LStringFromString = (str: string) => {
 	if (str.startsWith("[")) {
 		const start = str.match(/\[=*\[(.*)\]=*\]/)
 		if (start && start[1] !== undefined) {
-			return new String(start[1])
+			return new TString(start[1])
 		} else {
 		}
 	} else {
-		return new String(str.substr(1, str.length - 2))
+		return new TString(str.substr(1, str.length - 2))
 	}
 
 	throw new Error("cannot convert string: " + str)

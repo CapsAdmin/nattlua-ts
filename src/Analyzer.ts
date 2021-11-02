@@ -10,8 +10,9 @@ import {
 } from "./LuaParser"
 import { LexicalScope } from "./Scope"
 import { BaseType } from "./Types/BaseType"
-import { LNumberFromString, Number } from "./Types/Number"
+import { LNumberFromString, TNumber } from "./Types/Number"
 import { LStringFromString } from "./Types/String"
+import { False, Nil, True } from "./Types/Symbol"
 export type Environment = "runtime" | "typesystem"
 export class LuaAnalyzer {
 	scope_stack: LexicalScope[] = []
@@ -97,13 +98,13 @@ export class LuaAnalyzer {
 		return out
 	}
 
-	BinaryOperator(node: BinaryOperatorExpression, left: Number, right: Number) {
+	BinaryOperator(node: BinaryOperatorExpression, left: TNumber, right: TNumber) {
 		const op = node.operator.value
 		if (op === "+") {
 			if (left.Data !== undefined && right.Data !== undefined) {
-				return new Number(left.Data + right.Data).SetNode(node)
+				return new TNumber(left.Data + right.Data).SetNode(node)
 			} else {
-				return new Number().SetNode(node)
+				return new TNumber().SetNode(node)
 			}
 		}
 	}
@@ -125,15 +126,15 @@ export class LuaAnalyzer {
 		const value = node.value.value
 		const type = syntax.GetTokenType(node.value)
 
-		/*if (type == "keyword") {
+		if (type == "keyword") {
 			if (value == "nil") {
-				return new Nil().SetNode(node)
+				return Nil().SetNode(node)
 			} else if (value == "true") {
-				return new True().SetNode(node)
+				return True().SetNode(node)
 			} else if (value == "false") {
-				return new False().SetNode(node)
+				return False().SetNode(node)
 			}
-		}*/
+		}
 
 		if (type == "number") {
 			return LNumberFromString(value).SetNode(node)
