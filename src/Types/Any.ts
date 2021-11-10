@@ -22,6 +22,6 @@ export class TAny extends BaseType {
 	}
 
 	override IsSubsetOf(B: BaseType) {
-		return true as const
+		return [true, "any is always a subset of something"] as const
 	}
 }

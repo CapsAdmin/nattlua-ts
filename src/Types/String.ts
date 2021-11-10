@@ -7,7 +7,7 @@ const LuaStringMatch = (str: string, pattern: string) => {
 }
 
 export class TString extends BaseType {
-	override Data: string | undefined
+	declare Data: string | undefined
 	PatternContract: string | undefined
 	override Type = "string" as const
 	override Truthy = true
@@ -72,7 +72,7 @@ export class TString extends BaseType {
 	override IsSubsetOf(B: TString | TAny) {
 		const A = this
 
-		if (B instanceof TAny) return true
+		if (B instanceof TAny) return [true, "B is any"]
 		if (!(B instanceof TString)) return TypeErrors.TypeMismatch(A, B)
 
 		if (A.Data !== undefined && B.Data !== undefined && A.Data == B.Data) {

@@ -9,19 +9,6 @@ module.exports = {
 	},
 	extends: ["plugin:@typescript-eslint/recommended", "plugin:prettier/recommended"],
 	rules: {
-		"@typescript-eslint/strict-boolean-expressions": [
-			2,
-			{
-				allowString: false,
-				allowNumber: false,
-				allowNullableObject: true,
-				allowNullableBoolean: true,
-				allowNullableString: false,
-				allowNullableNumber: false,
-				allowAny: false,
-				allowRuleToRunWithoutStrictNullChecksIKnowWhatIAmDoing: false,
-			},
-		],
 		"@typescript-eslint/no-this-alias": 0,
 		"@typescript-eslint/explicit-module-boundary-types": 0,
 		"@typescript-eslint/ban-types": 0,

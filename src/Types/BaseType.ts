@@ -8,7 +8,7 @@ import { TUnion } from "./Union"
 
 export type Types = TString | TNumber | TUnion | TAny | TSymbol
 export const TypeErrors = {
-	Subset: function (a: BaseType, b: BaseType, reason?: string | string[]) {
+	Subset: function (a: Types, b: Types, reason?: string | string[]) {
 		const msg = [a, " is not a subset of ", b]
 
 		if (reason !== undefined) {
@@ -24,19 +24,19 @@ export const TypeErrors = {
 
 		return [false, msg] as const
 	},
-	TypeMismatch(a: BaseType, b: BaseType) {
+	TypeMismatch(a: Types, b: Types) {
 		return [false, a, " is not the same type as ", b] as const
 	},
-	ValueMismatch(a: BaseType, b: BaseType) {
+	ValueMismatch(a: Types, b: Types) {
 		return [false, a, " is not the same value as ", b] as const
 	},
-	Literal(a: BaseType) {
+	Literal(a: Types) {
 		return [false, a, " is not a literal"] as const
 	},
 	StringPattern(a: string, pattern: string) {
 		return [false, a, " does not match the pattern " + pattern] as const
 	},
-	MissingType(a: AnyParserNode, b: AnyParserNode, reason: string) {
+	MissingType(a: Types, b: Types, reason: string) {
 		return [false, a, " is missing type ", b, " because ", reason] as const
 	},
 	Other(error: string[]) {
@@ -61,7 +61,7 @@ export class BaseType {
 		return this.Data !== undefined
 	}
 
-	Equal(other: BaseType): boolean {
+	Equal(other: unknown): boolean {
 		return false
 	}
 
@@ -73,7 +73,9 @@ export class BaseType {
 		return this.Truthy && this.Falsy
 	}
 
-	IsSubsetOf(T: BaseType): [boolean | undefined, string] {}
+	IsSubsetOf(T: unknown): readonly [boolean | undefined, string] {
+		return [false, ""]
+	}
 
 	Copy(): BaseType {
 		return this

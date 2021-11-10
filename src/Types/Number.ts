@@ -20,7 +20,7 @@ const compare = (val: number, min: number, max: number, operator: keyof typeof o
 	return undefined
 }
 export class TNumber extends BaseType {
-	override Data: number | undefined
+	declare Data: number | undefined
 	override Type = "number" as const
 	override Truthy = true
 	override Falsy = false
@@ -110,38 +110,38 @@ export class TNumber extends BaseType {
 	override IsSubsetOf(B: TNumber | TAny) {
 		const A = this
 
-		if (B instanceof TAny) return true
+		if (B instanceof TAny) return [true, "B is any"]
 
 		if (A.Data !== undefined && B.Data !== undefined) {
 			// compare against literals
 
 			if (isNaN(A.Data) && isNaN(B.Data)) {
-				return true
+				return [true, "nan match"]
 			}
 
 			if (A.Data === B.Data) {
-				return true
+				return [true, "literal match"]
 			}
 
 			if (B.Max && B.Max.Data !== undefined) {
 				if (A.Data >= B.Data && A.Data <= B.Max.Data) {
-					return true
+					return [true, "range match"]
 				}
 			}
 
 			return TypeErrors.Subset(A, B)
 		} else if (A.Data == undefined && B.Data == undefined) {
 			// number contains number
-			return true
+			return [true, "number equals number"]
 		} else if (A.Data !== undefined && B.Data === undefined) {
 			// 42 subset of number
-			return true
+			return [true, "literal contains number"]
 		} else if (A.Data === undefined && B.Data !== undefined) {
 			// number subset of 42 ?
 			return TypeErrors.Subset(A, B)
 		}
 
-		return true
+		return [true, "number subset of number"]
 	}
 }
 

@@ -62,11 +62,11 @@ export class TUnion extends BaseType {
 		return this
 	}
 
-	Get(key: TString, from_table?: boolean) {
+	GetFromString(key: TString, from_table?: boolean) {
 		if (from_table) {
 			for (const obj of this.Data) {
 				if (obj instanceof TUnion) {
-					const val = obj.Get(key)
+					const val = obj.GetFromString(key)
 					if (val) {
 						return val
 					}
@@ -87,27 +87,29 @@ export class TUnion extends BaseType {
 		return TypeErrors.Other(errors)
 	}
 
-	IsSubsetOf(B: TUnion) {
+	IsSubsetOf(B: Types) {
 		const A = this
 
+		// if B is not a union, just box it inside a new union and run the function again
 		if (B.Type != "union") return A.IsSubsetOf(new TUnion([B]))
 
+		// if A contains "any" the whole union is void
 		for (const a of A.Data) {
-			if (a.Type == "any") return true
+			if (a.Type == "any") return a.IsSubsetOf(B)
 		}
 
 		for (const a of A.Data) {
-			{
-				const [b, reason] = B.Get(a)
+			if (a.Type == "string") {
+				const [b, reason] = B.GetFromString(a)
 				if (!b) return TypeErrors.MissingType(B, a, reason)
 			}
 			{
-				const [ok, reason] = a.IsSubsetOf(b)
-				if (!ok) return TypeErrors.Subset(a, b, reason)
+				const [ok, reason] = a.IsSubsetOf(B)
+				if (!ok) return TypeErrors.Subset(a, B, reason)
 			}
 		}
 
-		return true
+		return [true, "matching unions"]
 	}
 
 	RemoveType(type: Types) {

@@ -303,7 +303,7 @@ export class LuaLexer extends BaseLexer {
 			const closing = "]" + "=".repeat(this.GetPosition() - start - 2) + "]"
 			const pos = this.FindNearest(closing)
 
-			if (pos) {
+			if (pos !== undefined) {
 				this.SetPosition(pos)
 				return "string"
 			}

@@ -102,7 +102,7 @@ export interface FunctionArgumentSubExpression extends ParserNode {
 	Type: "expression"
 	Kind: "function_argument"
 	identifier?: Token
-	type_expression?: PrimaryExpressionNode
+	type_expression: PrimaryExpressionNode
 	Tokens: ParserNode["Tokens"] & {
 		[":"]?: Token
 	}

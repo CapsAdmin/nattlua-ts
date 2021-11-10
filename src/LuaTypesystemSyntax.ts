@@ -1,4 +1,3 @@
-import { BaseSyntax } from "./BaseSyntax"
 import { LuaRuntimeSyntax } from "./LuaRuntimeSyntax"
 
 export class LuaTypesystemSyntax extends LuaRuntimeSyntax {
