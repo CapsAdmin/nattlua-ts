@@ -1,15 +1,19 @@
 {
+  "deno.enable": true,
+  "cSpell.words": [
+    "nattlua",
+    "Outdent",
+    "Typesystem",
+    "Vararg"
+  ],
+  "deno.lint": true,
+  "deno.unstable": true,
 
-    "editor.codeActionsOnSave": {
-  
-      "source.fixAll.eslint": true
-  
-    },
-    "cSpell.words": [
-      "nattlua",
-      "Outdent",
-      "Typesystem",
-      "Vararg"
-    ],
-  
-  }
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true,
+    "source.organizeImports": true
+  },
+  "editor.defaultFormatter": "denoland.vscode-deno",
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": false
+}
