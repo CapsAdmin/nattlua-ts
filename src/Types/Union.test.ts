@@ -26,5 +26,6 @@ Deno.test("a union should not contain duplicates", () => {
 });
 
 Deno.test("a smaller union should be a subset of a larger union", () => {
-  expect(smaller.IsSubsetOf(larger)).toBe(true);
+  console.log(smaller, larger);
+  expect(smaller.IsSubsetOf(larger)).toContain(true);
 });

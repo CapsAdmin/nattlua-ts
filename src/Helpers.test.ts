@@ -6,20 +6,20 @@ const code = "foo\nbar\nfaz";
 Deno.test("LinePositionToSubPosition", () => {
   expect(Helpers.LinePositionToSubPosition(code, 0, 0)).toBe(0);
   expect(code.substr(Helpers.LinePositionToSubPosition(code, 1, 0))).toBe(
-    "\nbar\nfaz",
+    "\nbar\nfaz"
   );
   expect(code.substr(Helpers.LinePositionToSubPosition(code, 1, 1))).toBe(
-    "bar\nfaz",
+    "bar\nfaz"
   );
 });
 
 Deno.test("SubPositionToLinePosition", () => {
-  expect(Helpers.SubPositionToLinePosition(code, 4)).toBe({
+  expect(Helpers.SubPositionToLinePosition(code, 4)).toEqual({
     line: 1,
     character: 0,
   });
 
-  expect(Helpers.SubPositionToLinePosition(code, 5)).toBe({
+  expect(Helpers.SubPositionToLinePosition(code, 5)).toEqual({
     line: 1,
     character: 1,
   });

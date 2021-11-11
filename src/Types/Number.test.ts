@@ -11,7 +11,10 @@ const _40_to_45 = new TNumber(40, 45);
 const _42 = new TNumber(42);
 
 Deno.test("a literal number should be contained within all numbers", () => {
-  expect(_42.IsSubsetOf(all_numbers)).toBe(true);
+  expect(_42.IsSubsetOf(all_numbers)).toEqual([
+    true,
+    "literal contains number",
+  ]);
 });
 
 Deno.test("all numbers should not be contained within a literal number", () => {
@@ -19,15 +22,18 @@ Deno.test("all numbers should not be contained within a literal number", () => {
 });
 
 Deno.test("42 should be contained within any", () => {
-  expect(_42.IsSubsetOf(any)).toBe(true);
+  expect(_42.IsSubsetOf(any)).toEqual([true, "B is any"]);
 });
 
 Deno.test("any should be contained within 42", () => {
-  expect(any.IsSubsetOf(_42)).toBe(true);
+  expect(any.IsSubsetOf(_42)).toEqual([
+    true,
+    "any is always a subset of something",
+  ]);
 });
 
 Deno.test("42 should be contained within 32..52", () => {
-  expect(_42.IsSubsetOf(_32_to_52)).toBe(true);
+  expect(_42.IsSubsetOf(_32_to_52)).toEqual([true, "range match"]);
 });
 
 Deno.test("32..52 should not be contained within 42", () => {

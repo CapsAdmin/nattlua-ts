@@ -7,50 +7,53 @@ const all_letters = new TString();
 const foo_bar = new TString("foo bar");
 
 Deno.test("foo should be contained within all letters", () => {
-  expect(foo.IsSubsetOf(all_letters)).toBe(true);
+  expect(foo.IsSubsetOf(all_letters)).toEqual([true, "string"]);
 });
 
-Deno.test("all letters should not be containt within foo", () => {
-  expect(all_letters.IsSubsetOf(foo)).toBe(true);
+Deno.test("all letters should not be contained within foo", () => {
+  expect(all_letters.IsSubsetOf(foo)).toEqual([false, "string"]);
 });
 
 Deno.test("foo should be contained in any", () => {
-  expect(foo.IsSubsetOf(new TAny())).toBe(true);
+  expect(foo.IsSubsetOf(new TAny())).toContain(true);
 });
 
 Deno.test("any should be contained within foo", () => {
-  expect(new TAny().IsSubsetOf(foo)).toBe(true);
+  expect(new TAny().IsSubsetOf(foo)).toContain(true);
 });
 
 Deno.test("string pattern", () => {
   const pattern = new TString();
   pattern.PatternContract = "^FOO_.*";
 
-  expect(new TString("FOO_BAR").IsSubsetOf(pattern)).toBe(true);
+  expect(new TString("FOO_BAR").IsSubsetOf(pattern)).toEqual([
+    true,
+    "pattern match",
+  ]);
   expect(new TString("LOL_BAR").IsSubsetOf(pattern)).toContain(false);
 
-  expect(pattern.IsSubsetOf(new TString("FOO_BAR"))).toBe(false);
-  expect(pattern.IsSubsetOf(new TString("LOL_BAR"))).toBe(false);
+  expect(pattern.IsSubsetOf(new TString("FOO_BAR"))).toContain(false);
+  expect(pattern.IsSubsetOf(new TString("LOL_BAR"))).toContain(false);
 });
 
 Deno.test("string comparison", () => {
   expect(new TString("AAA").LogicalComparison(new TString("BBB"), ">")).toBe(
-    false,
+    false
   );
   expect(new TString("AAA").LogicalComparison(new TString("BBB"), "<")).toBe(
-    true,
+    true
   );
   expect(new TString("AAA").LogicalComparison(new TString("AAA"), "<=")).toBe(
-    true,
+    true
   );
   expect(new TString("AAA").LogicalComparison(new TString("AAA"), "=>")).toBe(
-    true,
+    true
   );
   expect(new TString("AAA").LogicalComparison(new TString(), "=>")).toBe(
-    undefined,
+    undefined
   );
   expect(new TString().LogicalComparison(new TString("AAA"), "=>")).toBe(
-    undefined,
+    undefined
   );
 });
 
@@ -63,7 +66,10 @@ Deno.test("tostring", () => {
 });
 
 Deno.test("subset", () => {
-  expect(new TString().IsSubsetOf(new TString())).toBe(undefined);
+  expect(new TString().IsSubsetOf(new TString())).toEqual([
+    undefined,
+    "string may be a subset of string",
+  ]);
 });
 
 Deno.test("copy", () => {

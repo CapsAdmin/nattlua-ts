@@ -51,13 +51,15 @@ export class TUnion extends BaseType {
       for (let i = this.Data.length - 1; i >= 0; i--) {
         const sub = this.Data[i]!;
         if (sub.Type == sup.Type) {
-          if ((sub instanceof TNumber && sup instanceof TNumber)) {
+          if (sub instanceof TNumber && sup instanceof TNumber) {
             if (sub.IsSubsetOf(sup)) {
               this.Data.splice(i, 1);
+              console.log("number", this.Data);
             }
           } else if (sub instanceof TString && sup instanceof TString) {
             if (sub.IsSubsetOf(sup)) {
               this.Data.splice(i, 1);
+              console.log("string", this.Data);
             }
           }
         }
